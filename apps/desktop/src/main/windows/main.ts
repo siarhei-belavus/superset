@@ -13,7 +13,7 @@ import {
 import type { AgentLifecycleEvent } from "shared/notification-types";
 import { createIPCHandler } from "trpc-electron/main";
 import { productName } from "~/package.json";
-import { appState } from "../lib/app-state";
+import { getMergedTabsState } from "../lib/app-state/tabs-state";
 import { browserManager } from "../lib/browser/browser-manager";
 import { createApplicationMenu, registerMenuHotkeyUpdates } from "../lib/menu";
 import { playNotificationSound } from "../lib/notification-sound";
@@ -27,13 +27,13 @@ import {
 	getNotificationTitle,
 	getWorkspaceName,
 } from "../lib/notifications/utils";
+import { registerIpcWindowHandler } from "../lib/window-manager";
 import {
 	getInitialWindowBounds,
 	loadWindowState,
 	saveWindowState,
 } from "../lib/window-state";
 import { getWorkspaceRuntimeRegistry } from "../lib/workspace-runtime";
-import { registerIpcWindowHandler } from "../lib/window-manager";
 
 // Singleton IPC handler to prevent duplicate handlers on window reopen (macOS)
 let ipcHandler: ReturnType<typeof createIPCHandler> | null = null;
@@ -139,6 +139,9 @@ export async function MainWindow() {
 		ipcHandler.attachWindow(window);
 	} else {
 		ipcHandler = createIPCHandler({
+			createContext: async ({ event }) => ({
+				windowId: BrowserWindow.fromWebContents(event.sender)?.id ?? null,
+			}),
 			router: createAppRouter(getWindow),
 			windows: [window],
 		});
@@ -169,16 +172,18 @@ export async function MainWindow() {
 			currentWorkspaceId: extractWorkspaceIdFromUrl(
 				window.webContents.getURL(),
 			),
-			tabsState: appState.data?.tabsState,
+			tabsState: getMergedTabsState(),
 		}),
 		getWorkspaceName: getWorkspaceNameFromDb,
-		getNotificationTitle: (event) =>
-			getNotificationTitle({
+		getNotificationTitle: (event) => {
+			const tabsState = getMergedTabsState();
+			return getNotificationTitle({
 				tabId: event.tabId,
 				paneId: event.paneId,
-				tabs: appState.data?.tabsState?.tabs,
-				panes: appState.data?.tabsState?.panes,
-			}),
+				tabs: tabsState.tabs,
+				panes: tabsState.panes,
+			});
+		},
 	});
 	notificationManager.start();
 

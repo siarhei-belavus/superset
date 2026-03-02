@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import { workspaces } from "@superset/local-db";
 import { track } from "main/lib/analytics";
-import { appState } from "main/lib/app-state";
+import { getMergedTabsState } from "main/lib/app-state/tabs-state";
 import { localDb } from "main/lib/local-db";
 import { HistoryReader, truncateUtf8ToLastBytes } from "../../terminal-history";
 import {
@@ -552,7 +552,7 @@ export class DaemonTerminalManager extends EventEmitter {
 
 	private getCreateOrAttachPriority(params: CreateSessionParams): number {
 		try {
-			const tabsState = appState.data?.tabsState;
+			const tabsState = getMergedTabsState();
 			const activeTabId = tabsState?.activeTabIds?.[params.workspaceId];
 			const focusedPaneId =
 				activeTabId && tabsState?.focusedPaneIds?.[activeTabId];

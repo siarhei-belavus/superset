@@ -1,3 +1,4 @@
+import { getWindowScopedStorageKey } from "renderer/lib/window-scoped-storage";
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 
@@ -113,7 +114,7 @@ export const useWorkspaceSidebarStore = create<WorkspaceSidebarState>()(
 				},
 			}),
 			{
-				name: "workspace-sidebar-store",
+				name: getWindowScopedStorageKey("workspace-sidebar-store"),
 				version: 2,
 				// Exclude ephemeral state from persistence
 				partialize: (state) => ({

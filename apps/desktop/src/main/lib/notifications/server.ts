@@ -5,7 +5,7 @@ import { handleAuthCallback } from "lib/trpc/routers/auth/utils/auth-functions";
 import { NOTIFICATION_EVENTS } from "shared/constants";
 import { env } from "shared/env.shared";
 import type { AgentLifecycleEvent } from "shared/notification-types";
-import { appState } from "../app-state";
+import { getMergedTabsState } from "../app-state/tabs-state";
 import { HOOK_PROTOCOL_VERSION } from "../terminal/env";
 import { mapEventType } from "./map-event-type";
 
@@ -59,7 +59,7 @@ function resolvePaneId(
 	sessionId: string | undefined,
 ): string | undefined {
 	try {
-		const tabsState = appState.data.tabsState;
+		const tabsState = getMergedTabsState();
 		if (!tabsState) return undefined;
 
 		// If paneId provided, validate it exists before returning

@@ -3,6 +3,7 @@ import { updateTree } from "react-mosaic-component";
 import { getFileOpenMode } from "renderer/hooks/useFileOpenMode";
 import { posthog } from "renderer/lib/posthog";
 import { trpcTabsStorage } from "renderer/lib/trpc-storage";
+import { getWindowScopedStorageKey } from "renderer/lib/window-scoped-storage";
 import { acknowledgedStatus } from "shared/tabs-types";
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
@@ -1773,7 +1774,7 @@ export const useTabsStore = create<TabsStore>()(
 				},
 			}),
 			{
-				name: "tabs-storage",
+				name: getWindowScopedStorageKey("tabs-storage"),
 				version: 7,
 				storage: trpcTabsStorage,
 				migrate: (persistedState, version) => {

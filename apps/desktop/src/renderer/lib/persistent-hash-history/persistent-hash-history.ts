@@ -3,8 +3,9 @@ import {
 	type HistoryLocation,
 	type RouterHistory,
 } from "@tanstack/react-router";
+import { getWindowScopedStorageKey } from "renderer/lib/window-scoped-storage";
 
-const STORAGE_KEY = "router-history";
+const STORAGE_KEY = getWindowScopedStorageKey("router-history");
 const MAX_ENTRIES = 100;
 
 type LocationState = HistoryLocation["state"];

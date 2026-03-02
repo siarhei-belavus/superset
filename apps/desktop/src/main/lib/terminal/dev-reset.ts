@@ -2,7 +2,7 @@ import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { SUPERSET_HOME_DIR } from "main/lib/app-environment";
 import { appState } from "main/lib/app-state";
-import { defaultAppState } from "main/lib/app-state/schemas";
+import { resetTabsState } from "main/lib/app-state/tabs-state";
 import {
 	disposeTerminalHostClient,
 	getTerminalHostClient,
@@ -45,7 +45,7 @@ export async function resetTerminalStateDev(): Promise<void> {
 	}
 
 	// Clear tabs/panes so we don't immediately try to restore a large terminal set.
-	appState.data.tabsState = defaultAppState.tabsState;
+	resetTabsState();
 	try {
 		await appState.write();
 	} catch (error) {

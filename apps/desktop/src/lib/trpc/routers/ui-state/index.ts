@@ -1,6 +1,10 @@
 import { observable } from "@trpc/server/observable";
 import { appState } from "main/lib/app-state";
 import type { TabsState, ThemeState } from "main/lib/app-state/schemas";
+import {
+	getTabsStateForWindow,
+	setTabsStateForWindow,
+} from "main/lib/app-state/tabs-state";
 import { hotkeysEmitter } from "main/lib/hotkeys-events";
 import {
 	buildOverridesFromBindings,
@@ -235,14 +239,14 @@ export const createUiStateRouter = () => {
 	return router({
 		// Tabs state procedures
 		tabs: router({
-			get: publicProcedure.query((): TabsState => {
-				return appState.data.tabsState;
+			get: publicProcedure.query(({ ctx }): TabsState => {
+				return getTabsStateForWindow(ctx.windowId);
 			}),
 
 			set: publicProcedure
 				.input(tabsStateSchema)
-				.mutation(async ({ input }) => {
-					appState.data.tabsState = input;
+				.mutation(async ({ ctx, input }) => {
+					setTabsStateForWindow(ctx.windowId, input);
 					await appState.write();
 					return { success: true };
 				}),

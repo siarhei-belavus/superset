@@ -1,3 +1,4 @@
+import { getWindowScopedStorageKey } from "renderer/lib/window-scoped-storage";
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 
@@ -68,7 +69,7 @@ export const useSearchDialogStore = create<SearchDialogState>()(
 				},
 			}),
 			{
-				name: "search-dialog-store",
+				name: getWindowScopedStorageKey("search-dialog-store"),
 			},
 		),
 		{ name: "SearchDialogStore" },

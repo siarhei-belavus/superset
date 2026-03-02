@@ -15,6 +15,7 @@ export interface ThemeState {
 
 export interface AppState {
 	tabsState: BaseTabsState;
+	tabsStateByWindow: Record<string, BaseTabsState>;
 	themeState: ThemeState;
 	hotkeysState: HotkeysState;
 }
@@ -27,6 +28,7 @@ export const defaultAppState: AppState = {
 		focusedPaneIds: {},
 		tabHistoryStacks: {},
 	},
+	tabsStateByWindow: {},
 	themeState: {
 		activeThemeId: "dark",
 		customThemes: [],

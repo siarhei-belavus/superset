@@ -1,3 +1,4 @@
+import { getWindowScopedStorageKey } from "renderer/lib/window-scoped-storage";
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 
@@ -19,7 +20,7 @@ export const useMarkdownPreferencesStore = create<MarkdownPreferencesState>()(
 				},
 			}),
 			{
-				name: "markdown-preferences",
+				name: getWindowScopedStorageKey("markdown-preferences"),
 			},
 		),
 		{ name: "MarkdownPreferencesStore" },
