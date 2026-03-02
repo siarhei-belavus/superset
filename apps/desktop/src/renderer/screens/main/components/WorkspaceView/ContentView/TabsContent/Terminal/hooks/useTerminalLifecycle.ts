@@ -3,6 +3,7 @@ import { SearchAddon } from "@xterm/addon-search";
 import type { IDisposable, ITheme, Terminal as XTerm } from "@xterm/xterm";
 import type { MutableRefObject, RefObject } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { electronTrpcClient } from "renderer/lib/trpc-client";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { killTerminalForPane } from "renderer/stores/tabs/utils/terminal-cleanup";
 import { scheduleTerminalAttach } from "../attach-scheduler";
@@ -192,6 +193,25 @@ export function useTerminalLifecycle({
 	const [xtermInstance, setXtermInstance] = useState<XTerm | null>(null);
 	const restartTerminalRef = useRef<() => void>(() => {});
 	const restartTerminal = useCallback(() => restartTerminalRef.current(), []);
+	const shouldKeepAttachedForSingleClient = useCallback(
+		async (targetPaneId: string) => {
+			try {
+				const { sessions } =
+					await electronTrpcClient.terminal.listDaemonSessions.query();
+				const session = sessions.find(
+					(entry) => entry.sessionId === targetPaneId,
+				);
+				return (session?.attachedClients ?? 0) <= 1;
+			} catch (error) {
+				console.warn(
+					"[Terminal] Failed to query attached client count before detach:",
+					error,
+				);
+				return false;
+			}
+		},
+		[],
+	);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: refs used intentionally
 	useEffect(() => {
@@ -660,9 +680,15 @@ export function useTerminalLifecycle({
 				pendingDetaches.delete(paneId);
 			} else {
 				const detachTimeout = setTimeout(() => {
-					detachRef.current({ paneId });
-					pendingDetaches.delete(paneId);
-					coldRestoreState.delete(paneId);
+					void (async () => {
+						const keepAttached =
+							await shouldKeepAttachedForSingleClient(paneId);
+						if (!keepAttached) {
+							detachRef.current({ paneId });
+						}
+						pendingDetaches.delete(paneId);
+						coldRestoreState.delete(paneId);
+					})();
 				}, 50);
 				pendingDetaches.set(paneId, detachTimeout);
 			}
@@ -689,6 +715,7 @@ export function useTerminalLifecycle({
 		resetModes,
 		setIsRestoredMode,
 		setRestoredCwd,
+		shouldKeepAttachedForSingleClient,
 	]);
 
 	return { xtermInstance, restartTerminal };
