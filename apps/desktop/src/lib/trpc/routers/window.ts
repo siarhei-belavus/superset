@@ -3,6 +3,7 @@ import { homedir } from "node:os";
 import path from "node:path";
 import type { BrowserWindow } from "electron";
 import { dialog } from "electron";
+import { openPaneWindow } from "main/windows/pane";
 import { z } from "zod";
 import { publicProcedure, router } from "..";
 
@@ -32,6 +33,18 @@ export const createWindowRouter = (getWindow: () => BrowserWindow | null) => {
 			window.close();
 			return { success: true };
 		}),
+
+		openPane: publicProcedure
+			.input(
+				z.object({
+					paneId: z.string().min(1),
+					paneName: z.string().optional(),
+				}),
+			)
+			.mutation(({ input }) => {
+				const result = openPaneWindow(input);
+				return { success: true, reused: result.reused };
+			}),
 
 		isMaximized: publicProcedure.query(() => {
 			const window = getWindow();
