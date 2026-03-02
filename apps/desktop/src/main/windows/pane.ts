@@ -16,6 +16,16 @@ interface OpenPaneWindowResult {
 	reused: boolean;
 }
 
+export function hasLivePaneWindow(paneId: string): boolean {
+	const window = paneWindows.get(paneId);
+	if (!window) return false;
+	if (window.isDestroyed()) {
+		paneWindows.delete(paneId);
+		return false;
+	}
+	return true;
+}
+
 export function openPaneWindow({
 	paneId,
 	paneName,
@@ -29,7 +39,7 @@ export function openPaneWindow({
 			: trimmedPaneName || trimmedWorkspaceName || "Pane";
 
 	const existingWindow = paneWindows.get(paneId);
-	if (existingWindow && !existingWindow.isDestroyed()) {
+	if (existingWindow && hasLivePaneWindow(paneId)) {
 		existingWindow.setTitle(windowTitle);
 		if (existingWindow.isMinimized()) {
 			existingWindow.restore();

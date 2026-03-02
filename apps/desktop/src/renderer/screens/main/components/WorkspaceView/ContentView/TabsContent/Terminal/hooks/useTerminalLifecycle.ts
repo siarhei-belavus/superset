@@ -193,18 +193,17 @@ export function useTerminalLifecycle({
 	const [xtermInstance, setXtermInstance] = useState<XTerm | null>(null);
 	const restartTerminalRef = useRef<() => void>(() => {});
 	const restartTerminal = useCallback(() => restartTerminalRef.current(), []);
-	const shouldKeepAttachedForSingleClient = useCallback(
+	const shouldKeepAttachedForLivePaneWindow = useCallback(
 		async (targetPaneId: string) => {
 			try {
-				const { sessions } =
-					await electronTrpcClient.terminal.listDaemonSessions.query();
-				const session = sessions.find(
-					(entry) => entry.sessionId === targetPaneId,
-				);
-				return (session?.attachedClients ?? 0) <= 1;
+				const { hasLiveWindow } =
+					await electronTrpcClient.window.hasLivePaneWindow.query({
+						paneId: targetPaneId,
+					});
+				return hasLiveWindow;
 			} catch (error) {
 				console.warn(
-					"[Terminal] Failed to query attached client count before detach:",
+					"[Terminal] Failed to query pane window state before detach:",
 					error,
 				);
 				return false;
@@ -682,7 +681,7 @@ export function useTerminalLifecycle({
 				const detachTimeout = setTimeout(() => {
 					void (async () => {
 						const keepAttached =
-							await shouldKeepAttachedForSingleClient(paneId);
+							await shouldKeepAttachedForLivePaneWindow(paneId);
 						if (!keepAttached) {
 							detachRef.current({ paneId });
 						}
@@ -715,7 +714,7 @@ export function useTerminalLifecycle({
 		resetModes,
 		setIsRestoredMode,
 		setRestoredCwd,
-		shouldKeepAttachedForSingleClient,
+		shouldKeepAttachedForLivePaneWindow,
 	]);
 
 	return { xtermInstance, restartTerminal };
