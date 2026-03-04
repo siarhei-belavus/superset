@@ -115,7 +115,16 @@ function createTrpcStorageAdapter(config: TrpcStorageConfig): StateStorage {
 			}
 
 			pendingValue = value;
-			localStorage.setItem(getPendingSnapshotKey(name), value);
+			try {
+				localStorage.setItem(getPendingSnapshotKey(name), value);
+			} catch (error) {
+				// Storage can fail (quota/incognito/policy). Continue with in-memory
+				// pending write so persistence still reaches appState.
+				console.error(
+					"[trpc-storage] Failed to cache pending snapshot in localStorage:",
+					error,
+				);
+			}
 			if (flushTimer) {
 				clearTimeout(flushTimer);
 				flushTimer = null;

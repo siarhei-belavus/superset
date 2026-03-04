@@ -35,6 +35,8 @@ interface ChangesViewProps {
 	isActive?: boolean;
 }
 
+const INACTIVE_BRANCH_REFETCH_INTERVAL_MS = 10_000;
+
 export function ChangesView({
 	onFileOpen,
 	isExpandedView,
@@ -53,6 +55,10 @@ export function ChangesView({
 			worktreePath,
 			refetchInterval: isActive ? 2500 : undefined,
 			refetchOnWindowFocus: isActive,
+			branchRefetchInterval: isActive
+				? undefined
+				: INACTIVE_BRANCH_REFETCH_INTERVAL_MS,
+			branchRefetchOnWindowFocus: true,
 		});
 
 	const {
@@ -68,7 +74,7 @@ export function ChangesView({
 	);
 
 	useBranchSyncInvalidation({
-		gitBranch: isActive ? status?.branch : undefined,
+		gitBranch: status?.branch ?? branchData?.currentBranch ?? undefined,
 		workspaceBranch: workspace?.branch,
 		workspaceId: workspaceId ?? "",
 	});
