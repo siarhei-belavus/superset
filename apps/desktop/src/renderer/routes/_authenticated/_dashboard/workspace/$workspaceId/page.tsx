@@ -36,7 +36,6 @@ import {
 	useHasWorkspaceFailed,
 	useIsWorkspaceInitializing,
 } from "renderer/stores/workspace-init";
-import { shallow } from "zustand/shallow";
 
 const EMPTY_HISTORY_STACK: string[] = [];
 
@@ -119,13 +118,7 @@ function WorkspacePage() {
 	// - Interrupted workspaces that aren't currently initializing (shows resume option)
 	const showInitView = isInitializing || hasFailed || hasIncompleteInit;
 
-	const tabs = useTabsStore(
-		useCallback(
-			(s) => s.tabs.filter((tab) => tab.workspaceId === workspaceId),
-			[workspaceId],
-		),
-		shallow,
-	);
+	const allTabs = useTabsStore((s) => s.tabs);
 	const activeTabIdForWorkspace = useTabsStore(
 		(s) => s.activeTabIds[workspaceId] ?? null,
 	);
@@ -152,6 +145,11 @@ function WorkspacePage() {
 	const currentSidebarMode = useSidebarStore((s) => s.currentMode);
 	const setSidebarMode = useSidebarStore((s) => s.setMode);
 
+	const tabs = useMemo(
+		() => allTabs.filter((tab) => tab.workspaceId === workspaceId),
+		[workspaceId, allTabs],
+	);
+
 	const activeTabId = useMemo(() => {
 		return resolveActiveTabIdForWorkspace({
 			workspaceId,
@@ -166,11 +164,8 @@ function WorkspacePage() {
 		[activeTabId, tabs],
 	);
 
-	const focusedPaneId = useTabsStore(
-		useCallback(
-			(s) => (activeTabId ? (s.focusedPaneIds[activeTabId] ?? null) : null),
-			[activeTabId],
-		),
+	const focusedPaneId = useTabsStore((s) =>
+		activeTabId ? (s.focusedPaneIds[activeTabId] ?? null) : null,
 	);
 
 	const { presets } = usePresets();

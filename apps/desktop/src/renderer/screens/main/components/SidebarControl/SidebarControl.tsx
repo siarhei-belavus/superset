@@ -4,16 +4,10 @@ import { cn } from "@superset/ui/utils";
 import { LuDiff } from "react-icons/lu";
 import { HotkeyTooltipContent } from "renderer/components/HotkeyTooltipContent";
 import { useSidebarStore } from "renderer/stores";
-import { shallow } from "zustand/shallow";
 
 export function SidebarControl() {
-	const { isSidebarOpen, toggleSidebar } = useSidebarStore(
-		(s) => ({
-			isSidebarOpen: s.isSidebarOpen,
-			toggleSidebar: s.toggleSidebar,
-		}),
-		shallow,
-	);
+	const isSidebarOpen = useSidebarStore((s) => s.isSidebarOpen);
+	const toggleSidebar = useSidebarStore((s) => s.toggleSidebar);
 
 	return (
 		<Tooltip>

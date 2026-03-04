@@ -19,7 +19,6 @@ import {
 } from "renderer/stores/sidebar-state";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import type { ChangeCategory, ChangedFile } from "shared/changes-types";
-import { shallow } from "zustand/shallow";
 import { useScrollContext } from "../ChangesContent";
 import { ChangesView } from "./ChangesView";
 import { FilesView } from "./FilesView";
@@ -85,24 +84,12 @@ export function RightSidebar() {
 		{ enabled: !!workspaceId },
 	);
 	const worktreePath = workspace?.worktreePath;
-	const {
-		currentMode,
-		rightSidebarTab,
-		setRightSidebarTab,
-		toggleSidebar,
-		setMode,
-		sidebarWidth,
-	} = useSidebarStore(
-		(s) => ({
-			currentMode: s.currentMode,
-			rightSidebarTab: s.rightSidebarTab,
-			setRightSidebarTab: s.setRightSidebarTab,
-			toggleSidebar: s.toggleSidebar,
-			setMode: s.setMode,
-			sidebarWidth: s.sidebarWidth,
-		}),
-		shallow,
-	);
+	const currentMode = useSidebarStore((s) => s.currentMode);
+	const rightSidebarTab = useSidebarStore((s) => s.rightSidebarTab);
+	const setRightSidebarTab = useSidebarStore((s) => s.setRightSidebarTab);
+	const toggleSidebar = useSidebarStore((s) => s.toggleSidebar);
+	const setMode = useSidebarStore((s) => s.setMode);
+	const sidebarWidth = useSidebarStore((s) => s.sidebarWidth);
 	const isExpanded = currentMode === SidebarMode.Changes;
 	const compactTabs = sidebarWidth < 250;
 	const showChangesTab = !!worktreePath;

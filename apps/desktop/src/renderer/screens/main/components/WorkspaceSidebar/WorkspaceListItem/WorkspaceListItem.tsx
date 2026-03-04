@@ -93,22 +93,17 @@ export function WorkspaceListItem({
 	const [hasHovered, setHasHovered] = useState(false);
 	const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
 	const rename = useWorkspaceRename(id, name, branch);
-	const workspaceStatus = useTabsStore(
-		useCallback(
-			(state) => {
-				function* paneStatuses() {
-					for (const tab of state.tabs) {
-						if (tab.workspaceId !== id) continue;
-						for (const paneId of extractPaneIdsFromLayout(tab.layout)) {
-							yield state.panes[paneId]?.status;
-						}
-					}
+	const workspaceStatus = useTabsStore((state) => {
+		function* paneStatuses() {
+			for (const tab of state.tabs) {
+				if (tab.workspaceId !== id) continue;
+				for (const paneId of extractPaneIdsFromLayout(tab.layout)) {
+					yield state.panes[paneId]?.status;
 				}
-				return getHighestPriorityStatus(paneStatuses());
-			},
-			[id],
-		),
-	);
+			}
+		}
+		return getHighestPriorityStatus(paneStatuses());
+	});
 	const clearWorkspaceAttentionStatus = useTabsStore(
 		(s) => s.clearWorkspaceAttentionStatus,
 	);
