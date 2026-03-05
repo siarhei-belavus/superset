@@ -23,14 +23,15 @@ export function useGitChangesStatus({
 	branchRefetchInterval,
 	branchRefetchOnWindowFocus,
 }: UseGitChangesStatusOptions) {
-	const { data: branchData } = electronTrpc.changes.getBranches.useQuery(
-		{ worktreePath: worktreePath || "" },
-		{
-			enabled: enabled && !!worktreePath,
-			refetchInterval: branchRefetchInterval,
-			refetchOnWindowFocus: branchRefetchOnWindowFocus,
-		},
-	);
+	const { data: branchData, refetch: refetchBranch } =
+		electronTrpc.changes.getBranches.useQuery(
+			{ worktreePath: worktreePath || "" },
+			{
+				enabled: enabled && !!worktreePath,
+				refetchInterval: branchRefetchInterval,
+				refetchOnWindowFocus: branchRefetchOnWindowFocus,
+			},
+		);
 
 	const effectiveBaseBranch =
 		branchData?.worktreeBaseBranch ?? branchData?.defaultBranch ?? "main";
@@ -68,5 +69,12 @@ export function useGitChangesStatus({
 		},
 	);
 
-	return { status, isLoading, effectiveBaseBranch, branchData, refetch };
+	return {
+		status,
+		isLoading,
+		effectiveBaseBranch,
+		branchData,
+		refetch,
+		refetchBranch,
+	};
 }
