@@ -742,6 +742,7 @@ export function ChatMastraInterface({
 				<McpControls mcpUi={mcpUi} />
 				<ChatInputFooter
 					cwd={cwd}
+					workspaceId={workspaceId}
 					isFocused={isFocused}
 					error={errorMessage}
 					canAbort={canAbort}

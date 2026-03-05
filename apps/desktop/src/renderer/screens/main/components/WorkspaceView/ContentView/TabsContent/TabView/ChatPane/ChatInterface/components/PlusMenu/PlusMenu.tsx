@@ -10,7 +10,8 @@ import {
 	DropdownMenuTrigger,
 } from "@superset/ui/dropdown-menu";
 import { HiMiniPaperClip } from "react-icons/hi2";
-import { LuLink, LuPlus } from "react-icons/lu";
+import { LuPlus } from "react-icons/lu";
+import { SiLinear } from "react-icons/si";
 import { PILL_BUTTON_CLASS } from "../../styles";
 
 interface PlusMenuProps {
@@ -34,7 +35,7 @@ export function PlusMenu({ onLinkIssue }: PlusMenuProps) {
 					<DropdownMenuShortcut>⌘U</DropdownMenuShortcut>
 				</DropdownMenuItem>
 				<DropdownMenuItem onSelect={onLinkIssue}>
-					<LuLink className="size-4" />
+					<SiLinear className="size-4" />
 					Link issue
 					<DropdownMenuShortcut>⌘I</DropdownMenuShortcut>
 				</DropdownMenuItem>

@@ -24,6 +24,7 @@ import { ChatMastraPane } from "./ChatMastraPane";
 import { DevToolsPane } from "./DevToolsPane";
 import { FileViewerPane } from "./FileViewerPane";
 import { TabPane } from "./TabPane";
+import { TaskViewerPane } from "./TaskViewerPane";
 
 interface TabViewProps {
 	tab: Tab;
@@ -223,6 +224,30 @@ export function TabView({ tab }: TabViewProps) {
 				);
 			}
 
+			// Route task-viewer panes
+			if (paneInfo.type === "task-viewer") {
+				const pane = allPanes[paneId];
+				const taskSlug = pane?.taskViewer?.taskSlug;
+				if (!taskSlug) {
+					return (
+						<div className="w-full h-full flex items-center justify-center text-muted-foreground">
+							Task slug unavailable
+						</div>
+					);
+				}
+				return (
+					<TaskViewerPane
+						paneId={paneId}
+						path={path}
+						tabId={tab.id}
+						taskSlug={taskSlug}
+						splitPaneAuto={splitPaneAuto}
+						removePane={removePane}
+						setFocusedPane={setFocusedPane}
+					/>
+				);
+			}
+
 			// Default: terminal panes
 			return (
 				<TabPane
@@ -255,6 +280,7 @@ export function TabView({ tab }: TabViewProps) {
 			movePaneToTab,
 			movePaneToNewTab,
 			hasAiChat,
+			allPanes,
 		],
 	);
 
