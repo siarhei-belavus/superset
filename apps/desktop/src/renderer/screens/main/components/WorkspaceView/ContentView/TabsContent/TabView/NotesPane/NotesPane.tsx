@@ -16,6 +16,8 @@ import { OrderedList } from "@tiptap/extension-ordered-list";
 import { Paragraph } from "@tiptap/extension-paragraph";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Strike } from "@tiptap/extension-strike";
+import TaskItem from "@tiptap/extension-task-item";
+import TaskList from "@tiptap/extension-task-list";
 import { Text } from "@tiptap/extension-text";
 import { EditorContent, useEditor } from "@tiptap/react";
 import {
@@ -34,6 +36,7 @@ import {
 	LuHeading3,
 	LuItalic,
 	LuList,
+	LuListChecks,
 	LuListOrdered,
 	LuQuote,
 	LuStrikethrough,
@@ -62,10 +65,12 @@ const KeyboardHandler = Extension.create({
 		return {
 			Tab: ({ editor }) => {
 				if (editor.commands.sinkListItem("listItem")) return true;
+				if (editor.commands.sinkListItem("taskItem")) return true;
 				return true;
 			},
 			"Shift-Tab": ({ editor }) => {
 				if (editor.commands.liftListItem("listItem")) return true;
+				if (editor.commands.liftListItem("taskItem")) return true;
 				return true;
 			},
 		};
@@ -154,6 +159,16 @@ function NotesToolbar({ editor }: { editor: TiptapEditor | null }) {
 				onClick={toggle(() => editor.chain().focus().toggleOrderedList().run())}
 			>
 				<LuListOrdered className="size-3.5" />
+			</button>
+
+			{/* Checklist toggle */}
+			<button
+				type="button"
+				className={toolbarBtnClass}
+				data-active={editor.isActive("taskList")}
+				onClick={toggle(() => editor.chain().focus().toggleTaskList().run())}
+			>
+				<LuListChecks className="size-3.5" />
 			</button>
 		</div>
 	);
@@ -264,6 +279,13 @@ export function NotesPane({
 				HTMLAttributes: { class: "mt-0 mb-2 pl-6 list-decimal" },
 			}),
 			ListItem,
+			TaskList.configure({
+				HTMLAttributes: { class: "notes-task-list" },
+			}),
+			TaskItem.configure({
+				HTMLAttributes: { class: "notes-task-item" },
+				nested: true,
+			}),
 			Blockquote.configure({
 				HTMLAttributes: {
 					class: "my-3 pl-4 border-l-2 border-border text-muted-foreground",
@@ -272,7 +294,11 @@ export function NotesPane({
 			HardBreak,
 			History,
 			Placeholder.configure({
-				placeholder: "Write your notes here...",
+				placeholder: ({ editor }) => {
+					if (editor.isEmpty) return "Write your notes here...";
+					return "";
+				},
+				showOnlyWhenEditable: true,
 				emptyNodeClass:
 					"first:before:text-muted-foreground first:before:float-left first:before:h-0 first:before:pointer-events-none first:before:content-[attr(data-placeholder)]",
 			}),
