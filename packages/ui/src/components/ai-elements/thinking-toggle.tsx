@@ -76,11 +76,9 @@ export const ThinkingToggle = ({
 								{...props}
 							>
 								<BrainIcon className="size-4" />
-								{isActive && (
-									<span className="text-[10px] leading-none">
-										{activeOption.label}
-									</span>
-								)}
+								<span className="text-[10px] leading-none">
+									{activeOption.label}
+								</span>
 								<ChevronDownIcon className="size-2.5 opacity-50" />
 								<span className="sr-only">
 									{isActive
@@ -108,7 +106,6 @@ export const ThinkingToggle = ({
 							onClick={() => onLevelChange(option.value)}
 							className="flex items-center gap-2"
 						>
-							<BrainIcon className="size-4 shrink-0" />
 							<div className="flex flex-1 flex-col gap-0.5">
 								<span className="text-sm font-medium">{option.label}</span>
 								<span className="text-xs text-muted-foreground">
