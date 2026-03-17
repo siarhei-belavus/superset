@@ -22,6 +22,7 @@ describe("getEditorTheme", () => {
 		}
 		expect(editorTheme.colors.addition).toBe(brightGreen);
 		expect(editorTheme.colors.deletion).toBe(brightRed);
+		expect(editorTheme.syntax.comment).toBe("#a8a5a3");
 		expect(editorTheme.syntax.keyword).toBe(
 			darkTheme.terminal?.magenta ?? darkTheme.ui.foreground,
 		);
@@ -81,7 +82,7 @@ describe("getEditorTheme", () => {
 		expect(editorTheme.colors.deletion).toBe("#ff6b6b");
 		expect(editorTheme.colors.modified).toBe("#6bbcff");
 		expect(editorTheme.syntax.keyword).toBe("#e39b57");
-		expect(editorTheme.syntax.comment).toBe("#8ea3b7");
+		expect(editorTheme.syntax.comment).toBe("#a8a5a3");
 		expect(editorTheme.syntax.string).toBe("#4dd4ac");
 	});
 });
