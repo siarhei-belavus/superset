@@ -1,5 +1,5 @@
 {
-  "id": "1553eeda-7fdb-4bc3-9aeb-4115ea0b9b7a",
+  "id": "bd531a5a-2309-4e84-afc9-34fda6fffc11",
   "prevId": "e1618e5b-cfa6-4219-bb55-2d7fc7ecda9d",
   "version": "7",
   "dialect": "postgresql",
@@ -1971,13 +1971,6 @@
         },
         "is_private": {
           "name": "is_private",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "issue_sync_enabled": {
-          "name": "issue_sync_enabled",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
@@ -4478,7 +4471,7 @@
           "name": "github_repository_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "created_at": {
           "name": "created_at",
@@ -4537,7 +4530,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },
@@ -4740,7 +4733,7 @@
           "name": "device_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "name": {
           "name": "name",
@@ -4860,7 +4853,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
+          "onDelete": "no action",
           "onUpdate": "no action"
         },
         "v2_workspaces_created_by_user_id_users_id_fk": {

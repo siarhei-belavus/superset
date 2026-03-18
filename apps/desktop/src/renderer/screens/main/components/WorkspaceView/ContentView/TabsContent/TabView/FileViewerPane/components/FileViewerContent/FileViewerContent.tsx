@@ -5,7 +5,10 @@ import {
 	useRef,
 } from "react";
 import { LuLoader } from "react-icons/lu";
-import { MarkdownRenderer } from "renderer/components/MarkdownRenderer";
+import {
+	type MarkdownEditorAdapter,
+	TipTapMarkdownRenderer,
+} from "renderer/components/MarkdownRenderer";
 import { LightDiffViewer } from "renderer/screens/main/components/WorkspaceView/ChangesContent/components/LightDiffViewer";
 import type { CodeEditorAdapter } from "renderer/screens/main/components/WorkspaceView/ContentView/components";
 import { CodeEditor } from "renderer/screens/main/components/WorkspaceView/components/CodeEditor";
@@ -31,12 +34,7 @@ interface RawFileData {
 
 interface RawFileError {
 	ok: false;
-	reason:
-		| "too-large"
-		| "binary"
-		| "outside-worktree"
-		| "symlink-escape"
-		| "not-found";
+	reason: "too-large" | "binary" | "not-found" | "is-directory";
 }
 
 type RawFileResult = RawFileData | RawFileError | undefined;
@@ -49,12 +47,7 @@ interface ImageData {
 
 interface ImageError {
 	ok: false;
-	reason:
-		| "too-large"
-		| "not-image"
-		| "outside-worktree"
-		| "symlink-escape"
-		| "not-found";
+	reason: "too-large" | "not-image" | "not-found" | "is-directory";
 }
 
 type ImageResult = ImageData | ImageError | undefined;
@@ -102,15 +95,15 @@ interface FileViewerContentProps {
 	imageData?: ImageResult;
 	diffData: DiffData | undefined;
 	editorRef: MutableRefObject<CodeEditorAdapter | null>;
-	originalContentRef: MutableRefObject<string>;
+	markdownEditorRef: MutableRefObject<MarkdownEditorAdapter | null>;
 	draftContentRef: MutableRefObject<string | null>;
+	renderedContent: string;
 	initialLine?: number;
 	initialColumn?: number;
 	diffViewMode: DiffViewMode;
 	hideUnchangedRegions: boolean;
-	onSaveRaw: () => Promise<unknown> | undefined;
-	onEditorChange: (value: string | undefined) => void;
-	setIsDirty: (dirty: boolean) => void;
+	onSaveFile: () => void;
+	onContentChange: (value: string | undefined) => void;
 	onSwitchToRawAtLocation: (line: number, column: number) => void;
 	onSplitHorizontal: () => void;
 	onSplitVertical: () => void;
@@ -147,15 +140,15 @@ export function FileViewerContent({
 	imageData,
 	diffData,
 	editorRef,
-	originalContentRef,
+	markdownEditorRef,
 	draftContentRef,
+	renderedContent,
 	initialLine,
 	initialColumn,
 	diffViewMode,
 	hideUnchangedRegions,
-	onSaveRaw,
-	onEditorChange,
-	setIsDirty,
+	onSaveFile,
+	onContentChange,
 	onSwitchToRawAtLocation,
 	onSplitHorizontal,
 	onSplitVertical,
@@ -246,23 +239,6 @@ export function FileViewerContent({
 
 		onSwitchToRawAtLocation(position.lineNumber, position.column);
 	};
-
-	useEffect(() => {
-		if (viewMode !== "raw") return;
-		if (isLoadingRaw) return;
-		if (!rawFileData?.ok) return;
-		if (draftContentRef.current !== null) return;
-
-		originalContentRef.current = rawFileData.content;
-		setIsDirty(false);
-	}, [
-		viewMode,
-		isLoadingRaw,
-		rawFileData,
-		draftContentRef,
-		originalContentRef,
-		setIsDirty,
-	]);
 
 	useEffect(() => {
 		if (
@@ -385,13 +361,11 @@ export function FileViewerContent({
 			const errorMessage =
 				imageData?.reason === "too-large"
 					? "Image is too large to preview (max 10MB)"
-					: imageData?.reason === "outside-worktree"
-						? "File is outside worktree"
-						: imageData?.reason === "symlink-escape"
-							? "File is a symlink pointing outside worktree"
-							: imageData?.reason === "not-image"
-								? "Not a supported image format"
-								: "Image not found";
+					: imageData?.reason === "not-image"
+						? "Not a supported image format"
+						: imageData?.reason === "is-directory"
+							? "This path is a directory"
+							: "Image not found";
 
 			return (
 				<div className="flex h-full items-center justify-center text-muted-foreground">
@@ -426,11 +400,9 @@ export function FileViewerContent({
 				? "File is too large to preview"
 				: rawFileData?.reason === "binary"
 					? "Binary file preview not supported"
-					: rawFileData?.reason === "outside-worktree"
-						? "File is outside worktree"
-						: rawFileData?.reason === "symlink-escape"
-							? "File is a symlink pointing outside worktree"
-							: "File not found";
+					: rawFileData?.reason === "is-directory"
+						? "This path is a directory"
+						: "File not found";
 
 		return (
 			<div className="flex h-full items-center justify-center text-muted-foreground">
@@ -455,7 +427,13 @@ export function FileViewerContent({
 					onClose={markdownSearch.closeSearch}
 				/>
 				<div ref={markdownContainerRef} className="h-full overflow-auto p-4">
-					<MarkdownRenderer content={rawFileData.content} />
+					<TipTapMarkdownRenderer
+						value={renderedContent}
+						editable
+						editorRef={markdownEditorRef}
+						onChange={onContentChange}
+						onSave={onSaveFile}
+					/>
 				</div>
 			</div>
 		);
@@ -481,10 +459,8 @@ export function FileViewerContent({
 					key={filePath}
 					language={detectLanguage(filePath)}
 					value={draftContentRef.current ?? rawFileData.content}
-					onChange={onEditorChange}
-					onSave={() => {
-						void onSaveRaw();
-					}}
+					onChange={onContentChange}
+					onSave={onSaveFile}
 					editorRef={editorRef}
 					fillHeight
 				/>

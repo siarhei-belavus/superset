@@ -3,6 +3,7 @@ import { Button } from "@superset/ui/button";
 import { useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MosaicBranch } from "react-mosaic-component";
+import type { MarkdownEditorAdapter } from "renderer/components/MarkdownRenderer";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { FileSaveConflictDialog } from "renderer/screens/main/components/WorkspaceView/components/FileSaveConflictDialog";
 import { useWorkspaceFileEvents } from "renderer/screens/main/components/WorkspaceView/hooks/useWorkspaceFileEvents";
@@ -21,7 +22,7 @@ import { BasePaneWindow } from "../components";
 import { FileViewerContent } from "./components/FileViewerContent";
 import { FileViewerToolbar } from "./components/FileViewerToolbar";
 import { useFileContent } from "./hooks/useFileContent";
-import { useFileSave } from "./hooks/useFileSave";
+import { type FileSaveResult, useFileSave } from "./hooks/useFileSave";
 import { useMarkdownSearch } from "./hooks/useMarkdownSearch";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 
@@ -70,7 +71,6 @@ export function FileViewerPane({
 	onMoveToNewTab,
 }: FileViewerPaneProps) {
 	const { workspaceId } = useParams({ strict: false });
-	// Use granular selector to only get this pane's fileViewer data
 	const fileViewer = useTabsStore((s) => s.panes[paneId]?.fileViewer);
 	const isFocused = useTabsStore((s) => s.focusedPaneIds[tabId] === paneId);
 	const equalizePaneSplits = useTabsStore((s) => s.equalizePaneSplits);
@@ -82,11 +82,14 @@ export function FileViewerPane({
 	} = useChangesStore();
 
 	const editorRef = useRef<CodeEditorAdapter | null>(null);
+	const markdownEditorRef = useRef<MarkdownEditorAdapter | null>(null);
 	const markdownContainerRef = useRef<HTMLDivElement>(null);
 	const [isDirty, setIsDirty] = useState(false);
 	const originalContentRef = useRef<string>("");
+	const hasLoadedOriginalContentRef = useRef(false);
 	const draftContentRef = useRef<string | null>(null);
 	const originalDiffContentRef = useRef<string>("");
+	const revisionRef = useRef<string>("");
 	const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
 	const [isSavingAndSwitching, setIsSavingAndSwitching] = useState(false);
 	const [saveConflict, setSaveConflict] = useState<{
@@ -107,6 +110,22 @@ export function FileViewerPane({
 	const pinPane = useTabsStore((s) => s.pinPane);
 	const trpcUtils = electronTrpc.useUtils();
 
+	const getCurrentContent = useCallback(() => {
+		if (viewMode === "rendered") {
+			return (
+				markdownEditorRef.current?.getValue() ??
+				draftContentRef.current ??
+				originalContentRef.current
+			);
+		}
+
+		return (
+			editorRef.current?.getValue() ??
+			draftContentRef.current ??
+			originalContentRef.current
+		);
+	}, [viewMode]);
+
 	const markdownSearch = useMarkdownSearch({
 		containerRef: markdownContainerRef,
 		isFocused,
@@ -114,15 +133,17 @@ export function FileViewerPane({
 		filePath,
 	});
 
-	const { handleSaveRaw, isSaving } = useFileSave({
-		worktreePath,
+	const { handleSaveFile, isSaving } = useFileSave({
+		workspaceId,
 		filePath,
 		paneId,
 		diffCategory,
-		editorRef,
+		getCurrentContent,
+		hasLoadedOriginalContentRef,
 		originalContentRef,
 		originalDiffContentRef,
 		draftContentRef,
+		revisionRef,
 		setIsDirty,
 	});
 
@@ -134,6 +155,7 @@ export function FileViewerPane({
 		diffData,
 		isLoadingDiff,
 	} = useFileContent({
+		workspaceId,
 		worktreePath,
 		filePath,
 		viewMode,
@@ -143,44 +165,63 @@ export function FileViewerPane({
 		isDirty,
 		originalContentRef,
 		originalDiffContentRef,
+		revisionRef,
 	});
+
+	useEffect(() => {
+		if (viewMode === "diff") {
+			return;
+		}
+
+		if (isLoadingRaw || !rawFileData?.ok) {
+			return;
+		}
+
+		if (draftContentRef.current !== null) {
+			return;
+		}
+
+		originalContentRef.current = rawFileData.content;
+		hasLoadedOriginalContentRef.current = true;
+		setIsDirty(false);
+	}, [isLoadingRaw, rawFileData, viewMode]);
+
 	const absoluteFilePath = useMemo(
 		() => toAbsoluteWorkspacePath(worktreePath, filePath),
 		[worktreePath, filePath],
 	);
-	const isImage = useMemo(() => isImageFile(filePath), [filePath]);
 	const hasExternalDiskChange =
 		isDirty &&
-		viewMode === "raw" &&
+		viewMode !== "diff" &&
 		((rawFileData?.ok === true &&
 			rawFileData.content !== originalContentRef.current) ||
 			(rawFileData?.ok === false && rawFileData.reason === "not-found"));
 
 	const invalidateCurrentFile = useCallback(() => {
-		if (!worktreePath || !filePath) {
+		if (!filePath) {
 			return;
 		}
 
 		const invalidations: Promise<unknown>[] = [];
 		if (viewMode === "diff") {
 			invalidations.push(
-				trpcUtils.changes.getFileContents.invalidate({
+				trpcUtils.changes.getGitFileContents.invalidate({
+					worktreePath,
+					absolutePath: absoluteFilePath,
+					oldAbsolutePath: oldPath,
+				}),
+				trpcUtils.changes.getGitOriginalContent.invalidate({
 					worktreePath,
 					absolutePath: absoluteFilePath,
 					oldAbsolutePath: oldPath,
 				}),
 			);
-		} else if (viewMode === "rendered" && isImage) {
+		}
+
+		if (workspaceId) {
 			invalidations.push(
-				trpcUtils.changes.readWorkingFileImage.invalidate({
-					worktreePath,
-					absolutePath: absoluteFilePath,
-				}),
-			);
-		} else {
-			invalidations.push(
-				trpcUtils.changes.readWorkingFile.invalidate({
-					worktreePath,
+				trpcUtils.filesystem.readFile.invalidate({
+					workspaceId,
 					absolutePath: absoluteFilePath,
 				}),
 			);
@@ -188,7 +229,6 @@ export function FileViewerPane({
 
 		Promise.all(invalidations).catch((error) => {
 			console.error("[FileViewerPane] Failed to invalidate file queries:", {
-				worktreePath,
 				absolutePath: absoluteFilePath,
 				error,
 			});
@@ -196,18 +236,20 @@ export function FileViewerPane({
 	}, [
 		absoluteFilePath,
 		filePath,
-		isImage,
 		oldPath,
 		trpcUtils,
 		viewMode,
+		workspaceId,
 		worktreePath,
 	]);
 
-	const handleEditorChange = useCallback((value: string | undefined) => {
+	const handleContentChange = useCallback((value: string | undefined) => {
 		if (value === undefined) return;
 		draftContentRef.current = value;
-		if (originalContentRef.current === "") {
+		if (!hasLoadedOriginalContentRef.current) {
 			originalContentRef.current = value;
+			hasLoadedOriginalContentRef.current = true;
+			setIsDirty(false);
 			return;
 		}
 		setIsDirty(value !== originalContentRef.current);
@@ -225,12 +267,12 @@ export function FileViewerPane({
 		pendingRenamePathRef.current = null;
 		setIsDirty(false);
 		originalContentRef.current = "";
+		hasLoadedOriginalContentRef.current = false;
 		originalDiffContentRef.current = "";
 		draftContentRef.current = null;
 		setSaveConflict(null);
 	}, [filePath]);
 
-	// Auto-pin when user makes edits (converts preview to pinned)
 	useEffect(() => {
 		if (isDirty && !isPinned) {
 			pinPane(paneId);
@@ -285,6 +327,56 @@ export function FileViewerPane({
 	const handlePin = () => {
 		pinPane(paneId);
 	};
+
+	const openSaveConflict = useCallback(
+		(diskContent: string | null) => {
+			setSaveConflict({
+				localContent: getCurrentContent(),
+				diskContent,
+			});
+		},
+		[getCurrentContent],
+	);
+
+	const performFileSave = useCallback(
+		async (options?: {
+			force?: boolean;
+		}): Promise<FileSaveResult | undefined> => {
+			try {
+				return await handleSaveFile(options);
+			} catch (error) {
+				console.error("[FileViewerPane] Save failed:", error);
+				return undefined;
+			}
+		},
+		[handleSaveFile],
+	);
+
+	const handleEditorSave = useCallback(() => {
+		void performFileSave().then((result) => {
+			if (result?.status === "conflict") {
+				openSaveConflict(result.currentContent);
+			}
+		});
+	}, [openSaveConflict, performFileSave]);
+
+	const syncEditorContent = useCallback((nextContent: string) => {
+		editorRef.current?.setValue(nextContent);
+		markdownEditorRef.current?.setValue(nextContent);
+	}, []);
+
+	const markContentClean = useCallback(
+		(nextContent: string) => {
+			syncEditorContent(nextContent);
+			originalContentRef.current = nextContent;
+			hasLoadedOriginalContentRef.current = true;
+			originalDiffContentRef.current = "";
+			draftContentRef.current = null;
+			setIsDirty(false);
+			setSaveConflict(null);
+		},
+		[syncEditorContent],
+	);
 
 	const switchToMode = useCallback(
 		(
@@ -349,55 +441,34 @@ export function FileViewerPane({
 		if (!pendingModeRef.current) return;
 
 		setIsSavingAndSwitching(true);
-		try {
-			if (viewMode === "raw" && editorRef.current) {
-				const result = await handleSaveRaw();
-				if (result?.status === "conflict") {
-					setSaveConflict({
-						localContent: editorRef.current.getValue(),
-						diskContent: result.currentContent,
-					});
-					setShowUnsavedDialog(false);
-					return;
-				}
-			}
-
-			completePendingModeSwitch();
-		} catch (error) {
-			console.error("[FileViewerPane] Save failed:", error);
-		} finally {
+		const result = await performFileSave();
+		if (result?.status === "conflict") {
+			openSaveConflict(result.currentContent);
+			setShowUnsavedDialog(false);
 			setIsSavingAndSwitching(false);
+			return;
 		}
+
+		if (result?.status === "saved") {
+			completePendingModeSwitch();
+		}
+
+		setIsSavingAndSwitching(false);
 	};
 
 	const handleDiscardAndSwitch = () => {
 		if (!pendingModeRef.current) return;
 
-		if (viewMode === "raw" && editorRef.current) {
-			editorRef.current.setValue(originalContentRef.current);
-		}
-
-		setIsDirty(false);
-		draftContentRef.current = null;
-		setSaveConflict(null);
-
+		markContentClean(originalContentRef.current);
 		completePendingModeSwitch();
 	};
 
 	const handleReloadFromDisk = useCallback(() => {
 		const nextDiskContent =
 			saveConflict?.diskContent ??
-			(rawFileData?.ok === true ? rawFileData.content : null);
+			(rawFileData?.ok === true ? rawFileData.content : "");
 
-		if (editorRef.current) {
-			editorRef.current.setValue(nextDiskContent ?? "");
-		}
-
-		originalContentRef.current = nextDiskContent ?? "";
-		originalDiffContentRef.current = "";
-		draftContentRef.current = null;
-		setIsDirty(false);
-		setSaveConflict(null);
+		markContentClean(nextDiskContent);
 		invalidateCurrentFile();
 
 		if (pendingModeRef.current) {
@@ -406,12 +477,13 @@ export function FileViewerPane({
 	}, [
 		completePendingModeSwitch,
 		invalidateCurrentFile,
+		markContentClean,
 		rawFileData,
 		saveConflict,
 	]);
 
 	const handleOverwriteSave = useCallback(async () => {
-		const result = await handleSaveRaw({ force: true });
+		const result = await performFileSave({ force: true });
 		if (result?.status !== "saved") {
 			return;
 		}
@@ -420,9 +492,16 @@ export function FileViewerPane({
 		if (pendingModeRef.current) {
 			completePendingModeSwitch();
 		}
-	}, [completePendingModeSwitch, handleSaveRaw]);
+	}, [completePendingModeSwitch, performFileSave]);
 
 	const fileName = filePath.split("/").pop() || filePath;
+	const renderedContent =
+		draftContentRef.current ??
+		(hasLoadedOriginalContentRef.current
+			? originalContentRef.current
+			: rawFileData?.ok === true
+				? rawFileData.content
+				: "");
 	const hasRenderedMode = isMarkdownFile(filePath) || isImageFile(filePath);
 	const hasDiff = !!diffCategory;
 
@@ -495,16 +574,9 @@ export function FileViewerPane({
 										<Button
 											size="sm"
 											onClick={() => {
-												setSaveConflict({
-													localContent:
-														editorRef.current?.getValue() ??
-														draftContentRef.current ??
-														"",
-													diskContent:
-														rawFileData?.ok === true
-															? rawFileData.content
-															: null,
-												});
+												openSaveConflict(
+													rawFileData?.ok === true ? rawFileData.content : null,
+												);
 											}}
 										>
 											Review Diff
@@ -525,22 +597,22 @@ export function FileViewerPane({
 							imageData={imageData}
 							diffData={diffData}
 							editorRef={editorRef}
-							originalContentRef={originalContentRef}
+							markdownEditorRef={markdownEditorRef}
 							draftContentRef={draftContentRef}
+							renderedContent={renderedContent}
 							initialLine={initialLine}
 							initialColumn={initialColumn}
 							diffViewMode={diffViewMode}
 							hideUnchangedRegions={hideUnchangedRegions}
-							onSaveRaw={handleSaveRaw}
-							onEditorChange={handleEditorChange}
-							setIsDirty={setIsDirty}
+							onSaveFile={handleEditorSave}
+							onContentChange={handleContentChange}
 							onSwitchToRawAtLocation={handleSwitchToRawAtLocation}
 							// Context menu props
 							onSplitHorizontal={() => splitPaneHorizontal(tabId, paneId, path)}
 							onSplitVertical={() => splitPaneVertical(tabId, paneId, path)}
 							onSplitWithNewChat={() =>
 								splitPaneVertical(tabId, paneId, path, {
-									paneType: "chat-mastra",
+									paneType: "chat",
 								})
 							}
 							onSplitWithNewBrowser={() =>
@@ -574,12 +646,7 @@ export function FileViewerPane({
 					}
 				}}
 				filePath={filePath}
-				localContent={
-					saveConflict?.localContent ??
-					editorRef.current?.getValue() ??
-					draftContentRef.current ??
-					""
-				}
+				localContent={saveConflict?.localContent ?? getCurrentContent()}
 				diskContent={saveConflict?.diskContent ?? null}
 				isSaving={isSaving}
 				onKeepEditing={() => setSaveConflict(null)}
