@@ -8,6 +8,7 @@ import type { AgentLifecycleEvent } from "shared/notification-types";
 import { appState } from "../app-state";
 import { HOOK_PROTOCOL_VERSION } from "../terminal/env";
 import { mapEventType } from "./map-event-type";
+import { resolvePaneIdFromTabsState } from "./resolve-pane-id";
 
 // Re-export types for backwards compatibility
 export type {
@@ -45,12 +46,9 @@ app.use((req, res, next) => {
 });
 
 /**
- * Resolves paneId from tabId or workspaceId using synced tabs state.
- * Falls back to focused pane in active tab.
- *
- * If a paneId is provided but doesn't exist in state (stale reference),
- * we fall through to tabId/workspaceId resolution instead of returning
- * an invalid paneId that would corrupt the store.
+ * Resolves pane IDs using main-process persisted tabs state when possible.
+ * Explicit pane IDs are trusted to avoid dropping early hook events while
+ * tabsState persistence is still catching up.
  */
 function resolvePaneId(
 	paneId: string | undefined,
@@ -59,44 +57,13 @@ function resolvePaneId(
 	sessionId: string | undefined,
 ): string | undefined {
 	try {
-		const tabsState = appState.data.tabsState;
-		if (!tabsState) return undefined;
-
-		// If paneId provided, validate it exists before returning
-		if (paneId && tabsState.panes?.[paneId]) {
-			return paneId;
-		}
-		// If paneId was provided but doesn't exist, fall through to resolution
-
-		// Try to resolve from tabId
-		if (tabId) {
-			const focusedPaneId = tabsState.focusedPaneIds?.[tabId];
-			if (focusedPaneId && tabsState.panes?.[focusedPaneId]) {
-				return focusedPaneId;
-			}
-		}
-
-		// Try to resolve from workspaceId
-		if (workspaceId) {
-			const activeTabId = tabsState.activeTabIds?.[workspaceId];
-			if (activeTabId) {
-				const focusedPaneId = tabsState.focusedPaneIds?.[activeTabId];
-				if (focusedPaneId && tabsState.panes?.[focusedPaneId]) {
-					return focusedPaneId;
-				}
-			}
-		}
-
-		// Resolve from chat session ID
-		if (sessionId) {
-			for (const [existingPaneId, pane] of Object.entries(
-				tabsState.panes ?? {},
-			)) {
-				if (pane.chat?.sessionId === sessionId) {
-					return existingPaneId;
-				}
-			}
-		}
+		return resolvePaneIdFromTabsState(
+			appState.data.tabsState,
+			paneId,
+			tabId,
+			workspaceId,
+			sessionId,
+		);
 	} catch {
 		// App state not initialized yet, ignore
 	}
