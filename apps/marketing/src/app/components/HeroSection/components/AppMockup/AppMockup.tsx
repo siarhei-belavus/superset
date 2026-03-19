@@ -147,7 +147,7 @@ function WorkspaceItem({
 }) {
 	return (
 		<div
-			className={`relative flex cursor-pointer items-start gap-2.5 px-2.5 py-1.5 text-xs ${isActive ? "bg-white/[0.08]" : "hover:bg-white/[0.03]"}`}
+			className={`relative flex cursor-pointer items-start gap-3 px-3 py-2 text-xs ${isActive ? "bg-white/[0.08]" : "hover:bg-white/[0.03]"}`}
 		>
 			{isActive && (
 				<div className="absolute left-0 top-0 bottom-0 w-0.5 rounded-r bg-[#D97757]/80" />
@@ -232,7 +232,7 @@ function FileChangeItem({
 
 	return (
 		<div
-			className={`flex items-center justify-between gap-2 px-3 hover:bg-white/[0.03] ${isFolder ? "mt-1 py-1.5" : "py-1"}`}
+			className={`flex items-center justify-between gap-2.5 px-4 hover:bg-white/[0.03] ${isFolder ? "mt-1.5 py-2" : "py-1.5"}`}
 			style={{ paddingLeft: `${12 + (indent || 0) * 16}px` }}
 		>
 			<div className="flex items-center gap-2 min-w-0">
@@ -284,7 +284,7 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 				}}
 			/>
 			{/* Window chrome */}
-			<div className="flex items-center justify-between px-4 py-2.5 bg-white/[0.03] backdrop-blur-md border-b border-white/[0.06]">
+			<div className="flex items-center justify-between border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 backdrop-blur-md">
 				<div className="flex items-center gap-1.5">
 					<div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
 					<div className="w-3 h-3 rounded-full bg-[#febc2e]" />
@@ -298,10 +298,10 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 				{/* Left sidebar */}
 				<div className="w-[210px] bg-white/[0.02] backdrop-blur-lg border-r border-white/[0.06] flex flex-col shrink-0">
 					{/* New Workspace button */}
-					<div className="border-b border-white/[0.06] px-2.5 py-2.5">
+					<div className="border-b border-white/[0.06] px-3 py-3">
 						<button
 							type="button"
-							className="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs text-muted-foreground/40 hover:bg-white/[0.025] hover:text-muted-foreground/60"
+							className="flex w-full cursor-pointer items-center gap-2 rounded px-2.5 py-1.5 text-xs text-muted-foreground/40 hover:bg-white/[0.025] hover:text-muted-foreground/60"
 						>
 							<LuPlus className="size-4" />
 							<span>New Workspace</span>
@@ -309,7 +309,7 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 					</div>
 
 					{/* Repository section */}
-					<div className="flex cursor-pointer items-center justify-between border-b border-white/[0.06] px-2.5 py-2 hover:bg-white/[0.04]">
+					<div className="flex cursor-pointer items-center justify-between border-b border-white/[0.06] px-3 py-2.5 hover:bg-white/[0.04]">
 						<div className="flex items-center gap-2">
 							<span className="text-[13px] text-foreground/70">superset</span>
 							<span className="text-xs text-muted-foreground/30">(5)</span>
@@ -332,7 +332,7 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 							}}
 							transition={{ duration: 0.3, ease: "easeOut" }}
 						>
-							<div className="relative flex items-start gap-2.5 border-l-2 border-[#D97757]/70 bg-[#D97757]/[0.08] px-2.5 py-1.5 text-xs">
+							<div className="relative flex items-start gap-3 border-l-2 border-[#D97757]/70 bg-[#D97757]/[0.08] px-3 py-2 text-xs">
 								<div className="mt-0.5 text-muted-foreground/50 relative">
 									<AsciiSpinner className="text-xs" />
 								</div>
@@ -368,8 +368,8 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 					</div>
 
 					{/* Ports section */}
-					<div className="border-t border-white/[0.06] mb-2">
-						<div className="flex items-center justify-between px-2.5 py-2">
+					<div className="mb-2 border-t border-white/[0.06]">
+						<div className="flex items-center justify-between px-3 py-2.5">
 							<div className="flex items-center gap-1 text-xs text-muted-foreground/40">
 								<span>⌥</span>
 								<span>Ports</span>
@@ -377,14 +377,14 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 							<span className="text-[11px] text-muted-foreground/30">4</span>
 						</div>
 						{PORTS.map((port) => (
-							<div key={port.workspace} className="px-2.5 py-1">
+							<div key={port.workspace} className="px-3 py-1.5">
 								<div className="flex items-center justify-between text-[11px]">
 									<span className="truncate text-muted-foreground/30">
 										{port.workspace}
 									</span>
 									<LuX className="size-3 text-muted-foreground/20" />
 								</div>
-								<div className="flex flex-wrap gap-1 mt-0.5">
+								<div className="mt-1 flex flex-wrap gap-1.5">
 									{port.ports.map((p) => (
 										<span
 											key={p}
@@ -402,9 +402,9 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 				{/* Main content area */}
 				<div className="flex min-w-0 flex-1 flex-col">
 					{/* Tab bar */}
-					<div className="flex items-center gap-0.5 px-2 py-1.5 bg-white/[0.02] backdrop-blur-md border-b border-white/[0.06]">
+					<div className="flex items-center gap-1 border-b border-white/[0.06] bg-white/[0.02] px-3 py-2 backdrop-blur-md">
 						{/* Claude tab - always visible, active */}
-						<div className="flex items-center gap-1.5 rounded-t border-b-2 border-[#D97757]/75 bg-[#D97757]/[0.05] px-3 py-1 text-xs text-foreground/90">
+						<div className="flex items-center gap-1.5 rounded-t border-b-2 border-[#D97757]/75 bg-[#D97757]/[0.05] px-4 py-1.5 text-xs text-foreground/90">
 							{activeDemo === "Create Parallel Branches" ? (
 								<>
 									<LuTerminal className="size-3.5 text-muted-foreground/70" />
@@ -425,7 +425,7 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 						</div>
 						{/* Other agent tabs - shown when "Use Any Agents" is active */}
 						<motion.div
-							className="flex items-center gap-1.5 overflow-hidden rounded-t py-1 text-xs text-muted-foreground/40 hover:bg-white/[0.03]"
+							className="flex items-center gap-1.5 overflow-hidden rounded-t py-1.5 text-xs text-muted-foreground/40 hover:bg-white/[0.03]"
 							initial={{
 								opacity: 0,
 								width: 0,
@@ -435,8 +435,8 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 							animate={{
 								opacity: activeDemo === "Use Any Agents" ? 1 : 0,
 								width: activeDemo === "Use Any Agents" ? "auto" : 0,
-								paddingLeft: activeDemo === "Use Any Agents" ? 12 : 0,
-								paddingRight: activeDemo === "Use Any Agents" ? 12 : 0,
+								paddingLeft: activeDemo === "Use Any Agents" ? 14 : 0,
+								paddingRight: activeDemo === "Use Any Agents" ? 14 : 0,
 							}}
 							transition={{
 								duration: 0.25,
@@ -454,7 +454,7 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 							<LuX className="size-3.5 text-muted-foreground/20" />
 						</motion.div>
 						<motion.div
-							className="flex items-center gap-1.5 overflow-hidden rounded-t py-1 text-xs text-muted-foreground/40 hover:bg-white/[0.03]"
+							className="flex items-center gap-1.5 overflow-hidden rounded-t py-1.5 text-xs text-muted-foreground/40 hover:bg-white/[0.03]"
 							initial={{
 								opacity: 0,
 								width: 0,
@@ -464,8 +464,8 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 							animate={{
 								opacity: activeDemo === "Use Any Agents" ? 1 : 0,
 								width: activeDemo === "Use Any Agents" ? "auto" : 0,
-								paddingLeft: activeDemo === "Use Any Agents" ? 12 : 0,
-								paddingRight: activeDemo === "Use Any Agents" ? 12 : 0,
+								paddingLeft: activeDemo === "Use Any Agents" ? 14 : 0,
+								paddingRight: activeDemo === "Use Any Agents" ? 14 : 0,
 							}}
 							transition={{
 								duration: 0.25,
@@ -483,7 +483,7 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 							<LuX className="size-3.5 text-muted-foreground/20" />
 						</motion.div>
 						<motion.div
-							className="flex items-center gap-1.5 overflow-hidden rounded-t py-1 text-xs text-muted-foreground/40 hover:bg-white/[0.03]"
+							className="flex items-center gap-1.5 overflow-hidden rounded-t py-1.5 text-xs text-muted-foreground/40 hover:bg-white/[0.03]"
 							initial={{
 								opacity: 0,
 								width: 0,
@@ -493,8 +493,8 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 							animate={{
 								opacity: activeDemo === "Use Any Agents" ? 1 : 0,
 								width: activeDemo === "Use Any Agents" ? "auto" : 0,
-								paddingLeft: activeDemo === "Use Any Agents" ? 12 : 0,
-								paddingRight: activeDemo === "Use Any Agents" ? 12 : 0,
+								paddingLeft: activeDemo === "Use Any Agents" ? 14 : 0,
+								paddingRight: activeDemo === "Use Any Agents" ? 14 : 0,
 							}}
 							transition={{
 								duration: 0.25,
@@ -511,14 +511,14 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 							<span>cursor</span>
 							<LuX className="size-3.5 text-muted-foreground/20" />
 						</motion.div>
-						<div className="flex cursor-pointer items-center px-2 py-1 text-muted-foreground/20 hover:text-muted-foreground/40">
+						<div className="flex cursor-pointer items-center px-2.5 py-1.5 text-muted-foreground/20 hover:text-muted-foreground/40">
 							<LuPlus className="size-4" />
 							<LuChevronDown className="size-3.5 ml-0.5" />
 						</div>
 					</div>
 
 					{/* Terminal header */}
-					<div className="flex items-center gap-2 px-4 py-2 bg-black/20 border-b border-white/[0.04]">
+					<div className="flex items-center gap-2 border-b border-white/[0.04] bg-black/20 px-4 py-2.5">
 						<span className="text-muted-foreground/40 text-xs">⬛</span>
 						<span className="text-xs text-muted-foreground/40">Terminal</span>
 						<div className="flex-1" />
@@ -527,81 +527,81 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 					</div>
 
 					{/* Terminal content */}
-					<div className="relative flex-1 overflow-hidden bg-black/30 backdrop-blur-sm p-4 font-mono text-xs leading-relaxed">
+					<div className="relative flex-1 overflow-hidden bg-black/30 p-5 font-mono text-xs leading-relaxed backdrop-blur-sm">
 						{/* Default terminal content */}
 						<motion.div
+							className="flex h-full flex-col"
 							initial={{ opacity: 1 }}
 							animate={{
 								opacity: activeDemo === "Create Parallel Branches" ? 0 : 1,
 							}}
 							transition={{ duration: 0.2, ease: "easeOut" }}
 						>
-							{/* Claude ASCII art header */}
-							<div className="flex items-start gap-3 mb-3">
-								<div className="whitespace-pre text-[11px] leading-none text-[#D97757]/75">
-									{`  * ▐▛███▜▌ *
+							<div>
+								{/* Claude ASCII art header */}
+								<div className="mb-4 flex items-start gap-3.5">
+									<div className="whitespace-pre text-[11px] leading-none text-[#D97757]/75">
+										{`  * ▐▛███▜▌ *
  * ▝▜█████▛▘ *
   *  ▘▘ ▝▝  *`}
+									</div>
+									<div className="text-muted-foreground/90 text-xs">
+										<div>
+											<span className="text-foreground font-medium">
+												Claude Code
+											</span>{" "}
+											v2.0.74
+										</div>
+										<div>Opus 4.5 · Claude Max</div>
+										<div className="text-muted-foreground/60">
+											~/.superset/worktrees/superset/cloud-ws
+										</div>
+									</div>
 								</div>
-								<div className="text-muted-foreground/90 text-xs">
+
+								{/* Command prompt */}
+								<div className="mb-4 text-foreground">
+									<span className="text-muted-foreground/60">❯</span>{" "}
+									<span className="text-[#D97757]/80">/mcp</span>
+								</div>
+
+								{/* MCP output */}
+								<div className="space-y-2.5 border-t border-white/[0.04] pt-4">
 									<div>
 										<span className="text-foreground font-medium">
-											Claude Code
-										</span>{" "}
-										v2.0.74
+											MCP Servers
+										</span>
 									</div>
-									<div>Opus 4.5 · Claude Max</div>
+									<div className="text-muted-foreground/70">1 connected</div>
+
+									<div className="mt-2">
+										<span className="text-muted-foreground/50">❯</span>
+										<span className="text-foreground ml-1">1.</span>
+										<span className="ml-1 text-[#D97757]/75">superset-mcp</span>
+										<span className="ml-2 text-emerald-300/75">
+											✓ connected
+										</span>
+									</div>
+
 									<div className="text-muted-foreground/60">
-										~/.superset/worktrees/superset/cloud-ws
+										config:{" "}
+										<span className="text-muted-foreground/45">.mcp.json</span>
+									</div>
+
+									<div className="text-muted-foreground/60">
+										tip: <span className="text-[#D97757]/65">/mcp disable</span>
 									</div>
 								</div>
 							</div>
 
-							{/* Command prompt */}
-							<div className="text-foreground mb-3">
-								<span className="text-muted-foreground/60">❯</span>{" "}
-								<span className="text-[#D97757]/80">/mcp</span>
-							</div>
-
-							{/* MCP output */}
-							<div className="border-t border-white/[0.04] pt-3 space-y-2">
-								<div>
-									<span className="text-foreground font-medium">
-										MCP Servers
-									</span>
-								</div>
-								<div className="text-muted-foreground/70">1 connected</div>
-
-								<div className="mt-2">
+							<div className="mt-auto border-t border-white/[0.04] pt-4">
+								<div className="flex items-center gap-3 rounded-md border border-white/[0.07] bg-black/20 px-3 py-2.5">
 									<span className="text-muted-foreground/50">❯</span>
-									<span className="text-foreground ml-1">1.</span>
-									<span className="ml-1 text-[#D97757]/75">morph-mcp</span>
-									<span className="ml-2 text-emerald-300/75">✓ connected</span>
-								</div>
-
-								<div className="text-muted-foreground/60">
-									config:{" "}
-									<span className="text-muted-foreground/45">.mcp.json</span>
-								</div>
-
-								<div className="text-muted-foreground/60">
-									tip: <span className="text-[#D97757]/65">/mcp disable</span>
-								</div>
-
-								<div className="mt-4 rounded-lg border border-white/[0.08] bg-black/25 px-3 py-2.5">
-									<div className="text-muted-foreground/35">
-										Ask Claude to enable browser automation...
-									</div>
-									<div className="mt-2 flex items-center justify-between">
-										<div className="flex items-center gap-2 text-[11px] text-muted-foreground/30">
-											<div className="flex size-5 items-center justify-center rounded border border-white/[0.06] bg-white/[0.03]">
-												<LuPlus className="size-3" />
-											</div>
-											<span>context</span>
-										</div>
-										<div className="flex size-5 items-center justify-center rounded-full bg-[#D97757]/15 text-[11px] text-[#D97757]/80">
-											↑
-										</div>
+									<span className="flex-1 text-muted-foreground/35">
+										Type a task for Claude...
+									</span>
+									<div className="flex size-5 items-center justify-center rounded-full bg-[#D97757]/15 text-[11px] text-[#D97757]/80">
+										↑
 									</div>
 								</div>
 							</div>
@@ -609,7 +609,7 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 
 						{/* Create Parallel Branches overlay */}
 						<motion.div
-							className="absolute inset-0 p-4 font-mono text-xs leading-relaxed"
+							className="absolute inset-0 p-5 font-mono text-xs leading-relaxed"
 							initial={{ opacity: 0 }}
 							animate={{
 								opacity: activeDemo === "Create Parallel Branches" ? 1 : 0,
@@ -624,7 +624,7 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 								<span className="text-muted-foreground/60">❯</span>{" "}
 								<span className="text-[#D97757]/80">superset new</span>
 							</div>
-							<div className="space-y-1.5 text-muted-foreground/70">
+							<div className="space-y-2 text-muted-foreground/70">
 								<div className="flex items-center gap-2">
 									<AsciiSpinner className="text-xs" />
 									<span>Setting up new parallel environment...</span>
@@ -665,7 +665,7 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 						}}
 					>
 						{/* Header */}
-						<div className="flex items-center justify-between px-3 py-2.5 border-b border-white/[0.06]">
+						<div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
 							<span className="text-xs text-foreground/60">Review Changes</span>
 							<div className="flex items-center gap-1 text-xs">
 								<LuGitPullRequest className="size-4 text-[#D97757]/70" />
@@ -674,13 +674,13 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 						</div>
 
 						{/* Commit & Push section */}
-						<div className="space-y-2 px-3 py-2.5 border-b border-white/[0.06]">
-							<div className="h-8 bg-black/20 rounded border border-white/[0.06] px-2.5 flex items-center text-xs text-muted-foreground/30">
+						<div className="space-y-2.5 border-b border-white/[0.06] px-4 py-3">
+							<div className="flex h-9 items-center rounded border border-white/[0.06] bg-black/20 px-3 text-xs text-muted-foreground/30">
 								Commit message...
 							</div>
 							<button
 								type="button"
-								className="flex w-full items-center justify-center gap-2 rounded bg-white/[0.04] px-3 py-1.5 text-xs text-foreground/70 hover:bg-white/[0.07]"
+								className="flex w-full items-center justify-center gap-2 rounded bg-white/[0.04] px-4 py-2 text-xs text-foreground/70 hover:bg-white/[0.07]"
 							>
 								<span>↑</span>
 								<span>Push</span>
@@ -727,7 +727,7 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 						}}
 					>
 						{/* PR Header */}
-						<div className="flex items-center justify-between px-3 py-2.5 border-b border-white/[0.06]">
+						<div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
 							<div className="flex items-center gap-2">
 								<LuGitPullRequest className="size-4.5 text-[#D97757]/75" />
 								<span className="text-sm font-medium text-foreground/70">
@@ -740,21 +740,21 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 						</div>
 
 						{/* File tabs */}
-						<div className="flex items-center gap-1 px-3 py-2 border-b border-white/[0.06] text-xs">
-							<span className="rounded bg-white/[0.04] px-2 py-1 text-foreground/60">
+						<div className="flex items-center gap-1.5 border-b border-white/[0.06] px-4 py-2.5 text-xs">
+							<span className="rounded bg-white/[0.04] px-3 py-1.5 text-foreground/60">
 								cloud-workspace.ts
 							</span>
-							<span className="px-2 py-1 text-muted-foreground/30">
+							<span className="px-3 py-1.5 text-muted-foreground/30">
 								enums.ts
 							</span>
-							<span className="px-2 py-1 text-muted-foreground/30">
+							<span className="px-3 py-1.5 text-muted-foreground/30">
 								+4 more
 							</span>
 						</div>
 
 						{/* Diff content */}
-						<div className="flex-1 overflow-hidden p-3 font-mono text-xs">
-							<div className="space-y-0.5">
+						<div className="flex-1 overflow-hidden p-4 font-mono text-xs">
+							<div className="space-y-1">
 								<div className="text-muted-foreground/40 py-1">
 									@@ -1,4 +1,6 @@
 								</div>
@@ -808,16 +808,16 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 						</div>
 
 						{/* Review actions */}
-						<div className="px-3 py-2.5 border-t border-white/[0.06] flex items-center gap-2">
+						<div className="flex items-center gap-2.5 border-t border-white/[0.06] px-4 py-3">
 							<button
 								type="button"
-								className="rounded bg-emerald-300/[0.10] px-3 py-1.5 text-xs text-emerald-300/75 hover:bg-emerald-300/[0.16]"
+								className="rounded bg-emerald-300/[0.10] px-4 py-2 text-xs text-emerald-300/75 hover:bg-emerald-300/[0.16]"
 							>
 								Approve
 							</button>
 							<button
 								type="button"
-								className="rounded bg-white/[0.04] px-3 py-1.5 text-xs text-foreground/50 hover:bg-white/[0.07]"
+								className="rounded bg-white/[0.04] px-4 py-2 text-xs text-foreground/50 hover:bg-white/[0.07]"
 							>
 								Comment
 							</button>
@@ -853,7 +853,7 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 					}}
 				/>
 				{/* IDE window chrome */}
-				<div className="flex items-center justify-between px-3 py-2 bg-white/[0.04] backdrop-blur-md border-b border-white/[0.06]">
+				<div className="flex items-center justify-between border-b border-white/[0.06] bg-white/[0.04] px-4 py-2.5 backdrop-blur-md">
 					<div className="flex items-center gap-1.5">
 						<div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]/80" />
 						<div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]/80" />
@@ -865,12 +865,12 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 
 				<div className="flex h-[calc(100%-36px)]">
 					{/* File tree */}
-					<div className="w-[110px] bg-white/[0.02] border-r border-white/[0.06] p-3 text-sm">
-						<div className="mb-2 flex items-center gap-2 text-muted-foreground/40">
+					<div className="w-[110px] border-r border-white/[0.06] bg-white/[0.02] p-4 text-sm">
+						<div className="mb-3 flex items-center gap-2 text-muted-foreground/40">
 							<LuFolder className="size-4" />
 							<span>src</span>
 						</div>
-						<div className="ml-4 space-y-1.5">
+						<div className="ml-4 space-y-2">
 							<div className="flex items-center gap-2 text-[#D97757]/75">
 								<LuFile className="size-4" />
 								<span>index.ts</span>
@@ -887,8 +887,8 @@ export function AppMockup({ activeDemo = "Use Any Agents" }: AppMockupProps) {
 					</div>
 
 					{/* Code editor */}
-					<div className="flex-1 bg-black/20 p-4 text-sm font-mono overflow-hidden">
-						<div className="space-y-1.5 leading-relaxed">
+					<div className="flex-1 overflow-hidden bg-black/20 p-5 text-sm font-mono">
+						<div className="space-y-2 leading-relaxed">
 							<div>
 								<span className="text-violet-300/60">import</span> {"{"} Agent{" "}
 								{"}"} <span className="text-violet-300/60">from</span>{" "}
