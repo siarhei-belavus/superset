@@ -34,6 +34,7 @@ export const GHReviewRequestSchema = z.object({
 
 export const GHCommentAuthorSchema = z.object({
 	login: z.string().optional(),
+	avatar_url: z.string().optional(),
 });
 
 export const GHCommentSchema = z.object({
@@ -42,6 +43,25 @@ export const GHCommentSchema = z.object({
 	body: z.string().optional(),
 	createdAt: z.string().optional(),
 	url: z.string().optional(),
+});
+
+export const GHReviewCommentSchema = z.object({
+	id: z.number(),
+	user: GHCommentAuthorSchema.nullable().optional(),
+	body: z.string().optional(),
+	created_at: z.string().optional(),
+	html_url: z.string().optional(),
+	path: z.string().optional(),
+	line: z.number().nullable().optional(),
+	original_line: z.number().nullable().optional(),
+});
+
+export const GHIssueCommentSchema = z.object({
+	id: z.number(),
+	user: GHCommentAuthorSchema.nullable().optional(),
+	body: z.string().optional(),
+	created_at: z.string().optional(),
+	html_url: z.string().optional(),
 });
 
 export const GHPRResponseSchema = z.object({

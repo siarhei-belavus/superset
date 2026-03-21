@@ -1,6 +1,13 @@
-import type { GitHubStatus } from "@superset/local-db";
-import { Avatar, AvatarFallback } from "@superset/ui/avatar";
+import type { GitHubStatus, PullRequestComment } from "@superset/local-db";
+import { Avatar, AvatarFallback, AvatarImage } from "@superset/ui/avatar";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@superset/ui/collapsible";
+import { Skeleton } from "@superset/ui/skeleton";
 import { cn } from "@superset/ui/utils";
+import { useState } from "react";
 import {
 	LuArrowUpRight,
 	LuCheck,
@@ -9,10 +16,14 @@ import {
 	LuMinus,
 	LuX,
 } from "react-icons/lu";
+import { VscChevronRight } from "react-icons/vsc";
 import { PRIcon } from "renderer/screens/main/components/PRIcon";
 
 interface ReviewPanelProps {
 	pr: GitHubStatus["pr"] | null;
+	comments?: PullRequestComment[];
+	isLoading?: boolean;
+	isCommentsLoading?: boolean;
 }
 
 const reviewDecisionConfig = {
@@ -82,9 +93,11 @@ const prStateLabel = {
 function getCommentPreview(body: string): string {
 	return (
 		body
+			.replace(/<!--[\s\S]*?-->/g, "\n")
 			.split(/\r?\n/)
 			.map((line) => line.trim())
 			.find(Boolean)
+			?.replace(/^[-*+>]\s*/, "")
 			?.replace(/\s+/g, " ") ?? "No preview available"
 	);
 }
@@ -118,7 +131,66 @@ function formatShortAge(timestamp?: number): string | null {
 	return `${Math.round(deltaHours / 24)}d`;
 }
 
-export function ReviewPanel({ pr }: ReviewPanelProps) {
+function getCommentLocation(comment: PullRequestComment): string | null {
+	if (comment.path) {
+		return comment.line ? `${comment.path}:${comment.line}` : comment.path;
+	}
+
+	return comment.kind === "conversation" ? "Conversation" : null;
+}
+
+function getCommentKindLabel(comment: PullRequestComment): string {
+	return comment.kind === "review" ? "Review" : "Comment";
+}
+
+export function ReviewPanel({
+	pr,
+	comments = [],
+	isLoading = false,
+	isCommentsLoading = false,
+}: ReviewPanelProps) {
+	const [checksOpen, setChecksOpen] = useState(true);
+	const [commentsOpen, setCommentsOpen] = useState(true);
+
+	if (isLoading && !pr) {
+		return (
+			<div className="flex h-full flex-col overflow-y-auto px-2 py-2">
+				<div className="border-b border-border/70 px-0 pb-2">
+					<div className="flex items-center gap-2 px-2">
+						<Skeleton className="h-4 w-4 rounded-sm" />
+						<Skeleton className="h-4 flex-1" />
+						<Skeleton className="h-3 w-10" />
+					</div>
+					<div className="mt-2 flex items-center gap-2 px-2">
+						<Skeleton className="h-4 w-24 rounded-sm" />
+						<Skeleton className="h-3 w-28" />
+					</div>
+				</div>
+				<div className="border-b border-border/60 px-0 py-2">
+					<div className="flex items-center justify-between px-2 pb-1">
+						<Skeleton className="h-3 w-10" />
+						<Skeleton className="h-3 w-24" />
+					</div>
+					<div className="space-y-1 px-1">
+						<Skeleton className="h-8 w-full rounded-sm" />
+						<Skeleton className="h-8 w-full rounded-sm" />
+					</div>
+				</div>
+				<div className="px-0 py-2">
+					<div className="flex items-center justify-between px-2 pb-1">
+						<Skeleton className="h-3 w-14" />
+						<Skeleton className="h-3 w-6" />
+					</div>
+					<div className="space-y-1 px-1">
+						<Skeleton className="h-11 w-full rounded-sm" />
+						<Skeleton className="h-11 w-full rounded-sm" />
+						<Skeleton className="h-11 w-full rounded-sm" />
+					</div>
+				</div>
+			</div>
+		);
+	}
+
 	if (!pr) {
 		return (
 			<div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
@@ -143,30 +215,30 @@ export function ReviewPanel({ pr }: ReviewPanelProps) {
 		relevantChecks.length > 0
 			? `${passingChecks}/${relevantChecks.length} checks passing`
 			: "No checks reported";
-	const checksStatusConfig = checkSummaryIconConfig[pr.checksStatus];
+	const checksStatus = relevantChecks.length > 0 ? pr.checksStatus : "none";
+	const checksStatusConfig = checkSummaryIconConfig[checksStatus];
 	const ChecksStatusIcon = checksStatusConfig.icon;
-	const comments = pr.comments ?? [];
 
 	return (
-		<div className="flex h-full flex-col overflow-y-auto">
-			<div className="border-b border-border/70 px-2 py-2.5">
-				<div className="flex items-center gap-2">
+		<div className="flex h-full min-h-0 flex-col overflow-y-auto">
+			<div className="border-b border-border/70 px-2 py-2">
+				<div className="flex items-center gap-1.5">
 					<PRIcon state={pr.state} className="size-4 shrink-0" />
 					<a
 						href={pr.url}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="min-w-0 flex-1 truncate text-sm font-medium text-foreground hover:underline"
+						className="min-w-0 flex-1 truncate text-xs font-medium text-foreground hover:underline"
 						title={pr.title}
 					>
 						{pr.title}
 					</a>
-					<span className="shrink-0 font-mono text-xs text-muted-foreground">
+					<span className="shrink-0 font-mono text-[10px] text-muted-foreground">
 						#{pr.number}
 					</span>
 				</div>
 
-				<div className="mt-2 flex items-center gap-2">
+				<div className="mt-1.5 flex items-center gap-1.5">
 					<span
 						className={cn(
 							"shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
@@ -175,7 +247,7 @@ export function ReviewPanel({ pr }: ReviewPanelProps) {
 					>
 						{reviewDecisionConfig[pr.reviewDecision].label}
 					</span>
-					<span className="truncate text-xs text-muted-foreground">
+					<span className="truncate text-[10px] text-muted-foreground">
 						{requestedReviewers.length > 0
 							? reviewLabel
 							: prStateLabel[pr.state]}
@@ -183,45 +255,84 @@ export function ReviewPanel({ pr }: ReviewPanelProps) {
 				</div>
 			</div>
 
-			<div className="px-2 pt-3">
-				<div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-					<span>Checks</span>
+			<Collapsible open={checksOpen} onOpenChange={setChecksOpen}>
+				<CollapsibleTrigger
+					className={cn(
+						"group flex w-full items-center justify-between gap-2 px-2 py-1.5 text-left min-w-0",
+						"hover:bg-accent/30 cursor-pointer transition-colors",
+					)}
+				>
+					<div className="flex min-w-0 items-center gap-1.5">
+						<VscChevronRight
+							className={cn(
+								"size-3 text-muted-foreground shrink-0 transition-transform duration-150",
+								checksOpen && "rotate-90",
+							)}
+						/>
+						<span className="text-xs font-medium truncate">Checks</span>
+						<span className="text-[10px] text-muted-foreground shrink-0">
+							{relevantChecks.length}
+						</span>
+					</div>
 					<div
 						className={cn(
-							"flex items-center gap-1.5",
+							"shrink-0 flex items-center gap-1",
 							checksStatusConfig.className,
 						)}
 					>
 						<ChecksStatusIcon
 							className={cn(
-								"size-3.5",
-								pr.checksStatus === "pending" && "animate-spin",
+								"size-3.5 shrink-0",
+								checksStatus === "pending" && "animate-spin",
 							)}
 						/>
-						<span className="normal-case">{checksSummary}</span>
+						<span className="max-w-[140px] truncate text-[10px] normal-case">
+							{checksSummary}
+						</span>
 					</div>
-				</div>
-			</div>
+				</CollapsibleTrigger>
+				<CollapsibleContent className="px-0.5 pb-1 min-w-0 overflow-hidden">
+					{relevantChecks.length === 0 ? (
+						<div className="px-1.5 py-1.5 text-xs text-muted-foreground">
+							No active checks reported for this pull request yet.
+						</div>
+					) : (
+						relevantChecks.map((check) => {
+							const { icon: CheckIcon, className } =
+								checkIconConfig[check.status];
 
-			<div className="px-1 pt-1">
-				{relevantChecks.length === 0 ? (
-					<div className="px-2 py-2 text-sm text-muted-foreground">
-						No active checks reported for this pull request yet.
-					</div>
-				) : (
-					relevantChecks.map((check) => {
-						const { icon: CheckIcon, className } =
-							checkIconConfig[check.status];
-
-						return check.url ? (
-							<a
-								key={check.name}
-								href={check.url}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="block"
-							>
-								<div className="flex min-w-0 items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors hover:bg-accent/35">
+							return check.url ? (
+								<a
+									key={check.name}
+									href={check.url}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="block"
+								>
+									<div className="flex min-w-0 items-center gap-1.5 rounded-sm px-1.5 py-1.5 text-xs transition-colors hover:bg-accent/30">
+										<CheckIcon
+											className={cn(
+												"size-3.5 shrink-0",
+												className,
+												check.status === "pending" && "animate-spin",
+											)}
+										/>
+										<span className="min-w-0 flex-1 truncate">
+											{check.name}
+										</span>
+										{check.durationText && (
+											<span className="shrink-0 text-[10px] text-muted-foreground">
+												{check.durationText}
+											</span>
+										)}
+										<LuArrowUpRight className="size-3.5 shrink-0 text-muted-foreground/70" />
+									</div>
+								</a>
+							) : (
+								<div
+									key={check.name}
+									className="flex min-w-0 items-center gap-1.5 rounded-sm px-1.5 py-1.5 text-xs"
+								>
 									<CheckIcon
 										className={cn(
 											"size-3.5 shrink-0",
@@ -231,86 +342,123 @@ export function ReviewPanel({ pr }: ReviewPanelProps) {
 									/>
 									<span className="min-w-0 flex-1 truncate">{check.name}</span>
 									{check.durationText && (
-										<span className="shrink-0 text-muted-foreground">
+										<span className="shrink-0 text-[10px] text-muted-foreground">
 											{check.durationText}
 										</span>
 									)}
-									<LuArrowUpRight className="size-3.5 shrink-0 text-muted-foreground/70" />
 								</div>
-							</a>
-						) : (
-							<div
-								key={check.name}
-								className="flex min-w-0 items-center gap-2 rounded-md px-2 py-2 text-sm"
-							>
-								<CheckIcon
-									className={cn(
-										"size-3.5 shrink-0",
-										className,
-										check.status === "pending" && "animate-spin",
-									)}
-								/>
-								<span className="min-w-0 flex-1 truncate">{check.name}</span>
-								{check.durationText && (
-									<span className="shrink-0 text-muted-foreground">
-										{check.durationText}
-									</span>
-								)}
-							</div>
-						);
-					})
-				)}
-			</div>
+							);
+						})
+					)}
+				</CollapsibleContent>
+			</Collapsible>
 
-			<div className="px-2 pt-4">
-				<div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-					<div className="flex items-center gap-1.5">
-						<LuMessageSquareText className="size-3.5" />
-						<span>Comments</span>
-					</div>
-					<span className="normal-case">{comments.length}</span>
+			<Collapsible
+				open={commentsOpen}
+				onOpenChange={setCommentsOpen}
+				className="flex min-h-0 flex-1 flex-col"
+			>
+				<div className="group flex items-center min-w-0">
+					<CollapsibleTrigger
+						className={cn(
+							"flex-1 flex items-center gap-1.5 px-2 py-1.5 text-left min-w-0",
+							"hover:bg-accent/30 cursor-pointer transition-colors",
+						)}
+					>
+						<VscChevronRight
+							className={cn(
+								"size-3 text-muted-foreground shrink-0 transition-transform duration-150",
+								commentsOpen && "rotate-90",
+							)}
+						/>
+						<LuMessageSquareText className="size-3.5 shrink-0 text-muted-foreground" />
+						<span className="text-xs font-medium truncate">Comments</span>
+						<span className="text-[10px] text-muted-foreground shrink-0">
+							{isCommentsLoading ? "..." : comments.length}
+						</span>
+					</CollapsibleTrigger>
 				</div>
-			</div>
-
-			<div className="px-1 py-1">
-				{comments.length === 0 ? (
-					<div className="px-2 py-2 text-sm text-muted-foreground">
-						No comments yet.
-					</div>
-				) : (
-					comments.map((comment) => (
-						<a
-							key={comment.id}
-							href={comment.url}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="flex items-center gap-2 rounded-md px-2 py-2 transition-colors hover:bg-accent/35"
-						>
-							<Avatar className="size-5">
-								<AvatarFallback className="text-[10px] font-medium">
-									{getAvatarFallback(comment.authorLogin)}
-								</AvatarFallback>
-							</Avatar>
-							<div className="min-w-0 flex-1">
-								<div className="flex items-center gap-2">
-									<span className="truncate text-sm font-medium text-foreground">
-										{comment.authorLogin}
-									</span>
-									{formatShortAge(comment.createdAt) && (
-										<span className="shrink-0 text-xs text-muted-foreground">
-											{formatShortAge(comment.createdAt)}
-										</span>
-									)}
-								</div>
-								<p className="truncate text-xs text-muted-foreground">
-									{getCommentPreview(comment.body)}
-								</p>
+				<CollapsibleContent className="min-h-0 flex-1 overflow-hidden">
+					<div className="h-full overflow-y-auto px-0.5 py-1">
+						{isCommentsLoading ? (
+							<div className="space-y-1 px-1">
+								<Skeleton className="h-11 w-full rounded-sm" />
+								<Skeleton className="h-11 w-full rounded-sm" />
+								<Skeleton className="h-11 w-full rounded-sm" />
 							</div>
-							<LuArrowUpRight className="size-3.5 shrink-0 text-muted-foreground/70" />
-						</a>
-					))
-				)}
-			</div>
+						) : comments.length === 0 ? (
+							<div className="px-1.5 py-1.5 text-xs text-muted-foreground">
+								No comments yet.
+							</div>
+						) : (
+							comments.map((comment) => {
+								const location = getCommentLocation(comment);
+								const age = formatShortAge(comment.createdAt);
+								const content = (
+									<>
+										<Avatar className="mt-0.5 size-5 shrink-0">
+											{comment.avatarUrl ? (
+												<AvatarImage
+													src={comment.avatarUrl}
+													alt={comment.authorLogin}
+												/>
+											) : null}
+											<AvatarFallback className="text-[10px] font-medium">
+												{getAvatarFallback(comment.authorLogin)}
+											</AvatarFallback>
+										</Avatar>
+										<div className="min-w-0 flex-1">
+											<div className="flex items-center gap-1.5">
+												<span className="truncate text-xs font-medium text-foreground">
+													{comment.authorLogin}
+												</span>
+												<span className="shrink-0 rounded border border-border/70 bg-muted/35 px-1 py-0 text-[9px] uppercase tracking-wide text-muted-foreground">
+													{getCommentKindLabel(comment)}
+												</span>
+												{age && (
+													<span className="shrink-0 text-[10px] text-muted-foreground">
+														{age}
+													</span>
+												)}
+											</div>
+											{location && (
+												<p className="truncate text-[10px] font-mono text-muted-foreground">
+													{location}
+												</p>
+											)}
+											<p className="mt-0.5 line-clamp-2 text-xs leading-4 text-muted-foreground">
+												{getCommentPreview(comment.body)}
+											</p>
+										</div>
+										{comment.url ? (
+											<LuArrowUpRight className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/70" />
+										) : null}
+									</>
+								);
+
+								const baseClassName =
+									"flex items-start gap-2 rounded-sm px-1.5 py-1.5";
+
+								return comment.url ? (
+									<a
+										key={comment.id}
+										href={comment.url}
+										target="_blank"
+										rel="noopener noreferrer"
+										className={`${baseClassName} transition-colors hover:bg-accent/30`}
+									>
+										{content}
+									</a>
+								) : (
+									<div key={comment.id} className={baseClassName}>
+										{content}
+									</div>
+								);
+							})
+						)}
+					</div>
+				</CollapsibleContent>
+			</Collapsible>
 		</div>
 	);
 }

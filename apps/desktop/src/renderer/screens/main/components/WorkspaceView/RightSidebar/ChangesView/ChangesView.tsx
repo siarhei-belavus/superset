@@ -1,3 +1,4 @@
+import * as TabsPrimitive from "@radix-ui/react-tabs";
 import {
 	AlertDialog,
 	AlertDialogContent,
@@ -8,7 +9,6 @@ import {
 } from "@superset/ui/alert-dialog";
 import { Button } from "@superset/ui/button";
 import { toast } from "@superset/ui/sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@superset/ui/tabs";
 import { useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
@@ -23,6 +23,7 @@ import {
 } from "shared/absolute-paths";
 import type { ChangeCategory, ChangedFile } from "shared/changes-types";
 import type { FileSystemChangeEvent } from "shared/file-tree-types";
+import { sidebarHeaderTabTriggerClassName } from "../headerTabStyles";
 import { CategorySection } from "./components/CategorySection";
 import { ChangesHeader } from "./components/ChangesHeader";
 import { CommitInput } from "./components/CommitInput";
@@ -111,17 +112,6 @@ export function ChangesView({
 			refetchInterval: isActive ? 10000 : false,
 		},
 	);
-
-	useBranchSyncInvalidation({
-		gitBranch: status?.branch ?? branchData?.currentBranch ?? undefined,
-		workspaceBranch: workspace?.branch,
-		workspaceId: workspaceId ?? "",
-	});
-
-	const handleRefresh = () => {
-		refetch();
-		refetchGithubStatus();
-	};
 
 	const stageAllMutation = electronTrpc.changes.stageAll.useMutation({
 		onSuccess: () => refetch(),
@@ -265,6 +255,32 @@ export function ChangesView({
 		invalidateBranches: false,
 		invalidateSelectedFile: false,
 	});
+	const {
+		data: githubComments = [],
+		isLoading: isGitHubCommentsLoading,
+		refetch: refetchGitHubComments,
+	} = electronTrpc.workspaces.getGitHubPRComments.useQuery(
+		{ workspaceId: workspaceId ?? "" },
+		{
+			enabled: !!workspaceId && isActive && !!githubStatus?.pr,
+			refetchInterval: isActive && githubStatus?.pr ? 30_000 : false,
+			refetchOnWindowFocus: isActive,
+		},
+	);
+
+	useBranchSyncInvalidation({
+		gitBranch: status?.branch ?? branchData?.currentBranch ?? undefined,
+		workspaceBranch: workspace?.branch,
+		workspaceId: workspaceId ?? "",
+	});
+
+	const handleRefresh = () => {
+		refetch();
+		refetchGithubStatus();
+		if (githubStatus?.pr) {
+			refetchGitHubComments();
+		}
+	};
 
 	const handleDiscard = (file: ChangedFile) => {
 		if (!worktreePath) return;
@@ -647,49 +663,66 @@ export function ChangesView({
 		);
 	}
 
+	const againstMainCount = status.againstBase.length;
+	const reviewCommentCount = githubStatus?.pr ? githubComments.length : 0;
+
 	return (
 		<div className="flex flex-col flex-1 min-h-0">
-			<ChangesHeader
-				onRefresh={handleRefresh}
-				viewMode={fileListViewMode}
-				onViewModeChange={setFileListViewMode}
-				showViewModeToggle={activeTab === "diffs"}
-				worktreePath={worktreePath}
-				pr={githubStatus?.pr ?? null}
-				isPRStatusLoading={isGitHubStatusLoading}
-				canCreatePR={prActionState.canCreatePR}
-				createPRBlockedReason={prActionState.createPRBlockedReason}
-				onStash={() => stashMutation.mutate({ worktreePath })}
-				onStashIncludeUntracked={() =>
-					stashIncludeUntrackedMutation.mutate({ worktreePath })
-				}
-				onStashPop={() => stashPopMutation.mutate({ worktreePath })}
-				isStashPending={
-					stashMutation.isPending ||
-					stashIncludeUntrackedMutation.isPending ||
-					stashPopMutation.isPending
-				}
-			/>
-			<Tabs
+			<TabsPrimitive.Root
 				value={activeTab}
 				onValueChange={(value) => setActiveTab(value as ChangesSidebarTab)}
 				className="flex flex-1 min-h-0 flex-col gap-0"
 			>
-				<div className="border-b border-border px-2 pb-1.5">
-					<TabsList className="h-7 w-full">
-						<TabsTrigger value="diffs" className="text-xs">
-							Diffs
-						</TabsTrigger>
-						<TabsTrigger value="review" className="text-xs">
-							Review
-						</TabsTrigger>
-					</TabsList>
+				<div className="h-10 shrink-0 border-b bg-background">
+					<TabsPrimitive.List className="flex h-full w-full items-stretch justify-start gap-0">
+						<TabsPrimitive.Trigger
+							value="diffs"
+							className={sidebarHeaderTabTriggerClassName}
+						>
+							<span>Diffs</span>
+							<span className="text-[11px] text-muted-foreground/60 tabular-nums">
+								{againstMainCount}
+							</span>
+						</TabsPrimitive.Trigger>
+						<TabsPrimitive.Trigger
+							value="review"
+							className={sidebarHeaderTabTriggerClassName}
+						>
+							<span>Review</span>
+							<span className="text-[11px] text-muted-foreground/60 tabular-nums">
+								{reviewCommentCount}
+							</span>
+						</TabsPrimitive.Trigger>
+					</TabsPrimitive.List>
 				</div>
 
-				<TabsContent
+				<TabsPrimitive.Content
 					value="diffs"
-					className="mt-0 flex min-h-0 flex-1 flex-col"
+					className="mt-0 flex min-h-0 flex-1 flex-col outline-none"
 				>
+					<div>
+						<ChangesHeader
+							onRefresh={handleRefresh}
+							viewMode={fileListViewMode}
+							onViewModeChange={setFileListViewMode}
+							showViewModeToggle
+							worktreePath={worktreePath}
+							pr={githubStatus?.pr ?? null}
+							isPRStatusLoading={isGitHubStatusLoading}
+							canCreatePR={prActionState.canCreatePR}
+							createPRBlockedReason={prActionState.createPRBlockedReason}
+							onStash={() => stashMutation.mutate({ worktreePath })}
+							onStashIncludeUntracked={() =>
+								stashIncludeUntrackedMutation.mutate({ worktreePath })
+							}
+							onStashPop={() => stashPopMutation.mutate({ worktreePath })}
+							isStashPending={
+								stashMutation.isPending ||
+								stashIncludeUntrackedMutation.isPending ||
+								stashPopMutation.isPending
+							}
+						/>
+					</div>
 					<div className="border-b border-border">
 						<CommitInput
 							worktreePath={worktreePath}
@@ -732,12 +765,20 @@ export function ChangesView({
 								))}
 						</div>
 					)}
-				</TabsContent>
+				</TabsPrimitive.Content>
 
-				<TabsContent value="review" className="mt-0 min-h-0 flex-1">
-					<ReviewPanel pr={githubStatus?.pr ?? null} />
-				</TabsContent>
-			</Tabs>
+				<TabsPrimitive.Content
+					value="review"
+					className="mt-0 flex min-h-0 flex-1 flex-col outline-none"
+				>
+					<ReviewPanel
+						pr={isGitHubStatusLoading ? null : (githubStatus?.pr ?? null)}
+						comments={githubComments}
+						isLoading={isGitHubStatusLoading}
+						isCommentsLoading={isGitHubCommentsLoading}
+					/>
+				</TabsPrimitive.Content>
+			</TabsPrimitive.Root>
 
 			<AlertDialog
 				open={showDiscardUnstagedDialog}

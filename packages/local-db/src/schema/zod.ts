@@ -28,9 +28,13 @@ export type CheckItem = z.infer<typeof checkItemSchema>;
 export const pullRequestCommentSchema = z.object({
 	id: z.string(),
 	authorLogin: z.string(),
+	avatarUrl: z.string().optional(),
 	body: z.string(),
 	createdAt: z.number().optional(),
 	url: z.string().optional(),
+	kind: z.enum(["review", "conversation"]).optional(),
+	path: z.string().optional(),
+	line: z.number().optional(),
 });
 
 export type PullRequestComment = z.infer<typeof pullRequestCommentSchema>;

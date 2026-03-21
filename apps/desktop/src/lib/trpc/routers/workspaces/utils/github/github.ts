@@ -9,17 +9,25 @@ import { execWithShellEnv } from "../shell-env";
 import {
 	GHDeploymentSchema,
 	GHDeploymentStatusSchema,
+	GHIssueCommentSchema,
 	type GHPRResponse,
 	GHPRResponseSchema,
 	GHRepoResponseSchema,
+	GHReviewCommentSchema,
 	type RepoContext,
 } from "./types";
 
 const cache = new Map<string, { data: GitHubStatus; timestamp: number }>();
 const CACHE_TTL_MS = 10_000;
+const commentsCache = new Map<
+	string,
+	{ data: PullRequestComment[]; timestamp: number }
+>();
+const COMMENTS_CACHE_TTL_MS = 30_000;
 
 export function clearGitHubStatusCacheForWorktree(worktreePath: string): void {
 	cache.delete(worktreePath);
+	commentsCache.delete(worktreePath);
 }
 
 /**
@@ -89,6 +97,66 @@ export async function fetchGitHubPRStatus(
 		return result;
 	} catch {
 		return null;
+	}
+}
+
+export async function fetchGitHubPRComments(
+	worktreePath: string,
+): Promise<PullRequestComment[]> {
+	const cached = commentsCache.get(worktreePath);
+	if (cached && Date.now() - cached.timestamp < COMMENTS_CACHE_TTL_MS) {
+		return cached.data;
+	}
+
+	try {
+		const repoContext = await getRepoContext(worktreePath);
+		if (!repoContext) {
+			return [];
+		}
+
+		const [{ stdout: branchOutput }, { stdout: shaOutput }] = await Promise.all(
+			[
+				execGitWithShellPath(["rev-parse", "--abbrev-ref", "HEAD"], {
+					cwd: worktreePath,
+				}),
+				execGitWithShellPath(["rev-parse", "HEAD"], { cwd: worktreePath }),
+			],
+		);
+		const branchName = branchOutput.trim();
+		const headSha = shaOutput.trim();
+		const prInfo = await getPRForBranch(
+			worktreePath,
+			branchName,
+			repoContext,
+			headSha,
+		);
+		if (!prInfo) {
+			return [];
+		}
+
+		const targetUrl = repoContext.isFork
+			? repoContext.upstreamUrl
+			: repoContext.repoUrl;
+		const nwo = extractNwoFromUrl(targetUrl);
+		if (!nwo) {
+			return [];
+		}
+
+		const [reviewComments, conversationComments] = await Promise.all([
+			fetchReviewCommentsForPR(worktreePath, nwo, prInfo.number),
+			fetchConversationCommentsForPR(worktreePath, nwo, prInfo.number),
+		]);
+		const comments = mergePullRequestComments(
+			reviewComments,
+			conversationComments,
+		);
+		commentsCache.set(worktreePath, {
+			data: comments,
+			timestamp: Date.now(),
+		});
+		return comments;
+	} catch {
+		return [];
 	}
 }
 
@@ -221,7 +289,7 @@ export function getPullRequestRepoArgs(
 }
 
 const PR_JSON_FIELDS =
-	"number,title,url,state,isDraft,mergedAt,additions,deletions,headRefOid,headRefName,reviewDecision,statusCheckRollup,comments,reviewRequests";
+	"number,title,url,state,isDraft,mergedAt,additions,deletions,headRefOid,headRefName,reviewDecision,statusCheckRollup,reviewRequests";
 
 async function getPRForBranch(
 	worktreePath: string,
@@ -412,7 +480,6 @@ function formatPRData(data: GHPRResponse): NonNullable<GitHubStatus["pr"]> {
 		reviewDecision: mapReviewDecision(data.reviewDecision),
 		checksStatus: computeChecksStatus(data.statusCheckRollup),
 		checks: parseChecks(data.statusCheckRollup),
-		comments: parseComments(data.comments),
 		requestedReviewers: parseReviewRequests(data.reviewRequests),
 	};
 }
@@ -509,33 +576,141 @@ function parseChecks(rollup: GHPRResponse["statusCheckRollup"]): CheckItem[] {
 	});
 }
 
-function parseComments(
-	comments: GHPRResponse["comments"],
-): PullRequestComment[] {
-	if (!comments || comments.length === 0) {
+function parseTimestamp(value?: string): number | undefined {
+	if (!value) {
+		return undefined;
+	}
+
+	const timestamp = new Date(value).getTime();
+	return Number.isNaN(timestamp) ? undefined : timestamp;
+}
+
+function parseApiArray(stdout: string): unknown[] {
+	const trimmed = stdout.trim();
+	if (!trimmed || trimmed === "null") {
 		return [];
 	}
 
-	return comments
-		.map((comment, index) => {
-			const createdAt = comment.createdAt
-				? new Date(comment.createdAt).getTime()
-				: undefined;
-			const authorLogin = comment.author?.login || "github";
-			const id =
-				comment.id ||
-				comment.url ||
-				`${authorLogin}-${createdAt ?? "unknown"}-${index}`;
+	try {
+		const raw = JSON.parse(trimmed);
+		return Array.isArray(raw) ? raw : [];
+	} catch (error) {
+		console.warn(
+			"[GitHub] Failed to parse API array response:",
+			error instanceof Error ? error.message : String(error),
+		);
+		return [];
+	}
+}
 
-			return {
-				id,
-				authorLogin,
-				body: comment.body ?? "",
-				createdAt: Number.isNaN(createdAt) ? undefined : createdAt,
-				url: comment.url,
-			};
+async function fetchReviewCommentsForPR(
+	worktreePath: string,
+	nwo: string,
+	prNumber: number,
+): Promise<PullRequestComment[]> {
+	const { stdout } = await execWithShellEnv(
+		"gh",
+		["api", `repos/${nwo}/pulls/${prNumber}/comments?per_page=100`],
+		{ cwd: worktreePath },
+	);
+	return parseReviewCommentsResponse(parseApiArray(stdout));
+}
+
+async function fetchConversationCommentsForPR(
+	worktreePath: string,
+	nwo: string,
+	prNumber: number,
+): Promise<PullRequestComment[]> {
+	const { stdout } = await execWithShellEnv(
+		"gh",
+		["api", `repos/${nwo}/issues/${prNumber}/comments?per_page=100`],
+		{ cwd: worktreePath },
+	);
+	return parseConversationCommentsResponse(parseApiArray(stdout));
+}
+
+export function parseReviewCommentsResponse(
+	raw: unknown[],
+): PullRequestComment[] {
+	return raw
+		.flatMap((item) => {
+			const result = GHReviewCommentSchema.safeParse(item);
+			if (!result.success) {
+				return [];
+			}
+
+			const comment = result.data;
+			const body = comment.body?.trim();
+			if (!body) {
+				return [];
+			}
+
+			return [
+				{
+					id: `review-${comment.id}`,
+					authorLogin: comment.user?.login || "github",
+					...(comment.user?.avatar_url
+						? { avatarUrl: comment.user.avatar_url }
+						: {}),
+					body,
+					createdAt: parseTimestamp(comment.created_at),
+					url: comment.html_url,
+					kind: "review" as const,
+					path: comment.path,
+					line: comment.line ?? comment.original_line ?? undefined,
+				},
+			];
 		})
 		.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+}
+
+export function parseConversationCommentsResponse(
+	raw: unknown[],
+): PullRequestComment[] {
+	return raw
+		.flatMap((item) => {
+			const result = GHIssueCommentSchema.safeParse(item);
+			if (!result.success) {
+				return [];
+			}
+
+			const comment = result.data;
+			const body = comment.body?.trim();
+			if (!body) {
+				return [];
+			}
+
+			return [
+				{
+					id: `conversation-${comment.id}`,
+					authorLogin: comment.user?.login || "github",
+					...(comment.user?.avatar_url
+						? { avatarUrl: comment.user.avatar_url }
+						: {}),
+					body,
+					createdAt: parseTimestamp(comment.created_at),
+					url: comment.html_url,
+					kind: "conversation" as const,
+				},
+			];
+		})
+		.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+}
+
+export function mergePullRequestComments(
+	...commentGroups: PullRequestComment[][]
+): PullRequestComment[] {
+	const commentsById = new Map<string, PullRequestComment>();
+
+	for (const group of commentGroups) {
+		for (const comment of group) {
+			commentsById.set(comment.id, comment);
+		}
+	}
+
+	return [...commentsById.values()].sort(
+		(a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0),
+	);
 }
 
 /**
