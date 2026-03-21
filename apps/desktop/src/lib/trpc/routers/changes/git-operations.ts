@@ -77,11 +77,6 @@ async function fetchCurrentBranch(git: SimpleGit): Promise<void> {
 	}
 }
 
-function clearWorktreeStatusCaches(worktreePath: string): void {
-	clearGitHubStatusCacheForWorktree(worktreePath);
-	clearStatusCacheForWorktree(worktreePath);
-}
-
 async function pushWithSetUpstream({
 	git,
 	branch,
