@@ -58,7 +58,7 @@ export function BrowserErrorOverlay({
 	}, []);
 
 	const copyDetails = useCallback(() => {
-		navigator.clipboard.writeText(detailsText);
+		void navigator.clipboard.writeText(detailsText).catch(() => {});
 	}, [detailsText]);
 
 	return (

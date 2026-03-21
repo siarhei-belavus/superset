@@ -57,7 +57,7 @@ export function FileViewerToolbar({
 	const [copied, setCopied] = useState(false);
 
 	const handleCopyPath = () => {
-		navigator.clipboard.writeText(filePath);
+		void navigator.clipboard.writeText(filePath).catch(() => {});
 		setCopied(true);
 		setTimeout(() => setCopied(false), 1500);
 	};

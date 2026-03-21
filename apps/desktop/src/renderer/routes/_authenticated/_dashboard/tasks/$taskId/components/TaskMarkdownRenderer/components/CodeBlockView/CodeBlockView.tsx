@@ -31,7 +31,7 @@ export function CodeBlockView({
 	);
 
 	const handleCopy = async () => {
-		await navigator.clipboard.writeText(node.textContent);
+		await navigator.clipboard.writeText(node.textContent).catch(() => {});
 		setCopied(true);
 		setTimeout(() => setCopied(false), 2000);
 	};

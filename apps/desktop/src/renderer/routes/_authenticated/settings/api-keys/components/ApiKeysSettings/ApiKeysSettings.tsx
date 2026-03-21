@@ -101,7 +101,7 @@ export function ApiKeysSettings({ visibleItems }: ApiKeysSettingsProps) {
 	};
 
 	const handleCopyKey = () => {
-		navigator.clipboard.writeText(newKeyValue);
+		void navigator.clipboard.writeText(newKeyValue).catch(() => {});
 		setCopied(true);
 		setTimeout(() => setCopied(false), 2000);
 	};

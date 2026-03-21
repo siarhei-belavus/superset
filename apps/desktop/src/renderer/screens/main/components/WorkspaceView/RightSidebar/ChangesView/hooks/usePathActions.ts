@@ -38,13 +38,13 @@ export function usePathActions({
 
 	const copyPath = useCallback(async () => {
 		if (absolutePath) {
-			await navigator.clipboard.writeText(absolutePath);
+			await navigator.clipboard.writeText(absolutePath).catch(() => {});
 		}
 	}, [absolutePath]);
 
 	const copyRelativePath = useCallback(async () => {
 		if (relativePath) {
-			await navigator.clipboard.writeText(relativePath);
+			await navigator.clipboard.writeText(relativePath).catch(() => {});
 		}
 	}, [relativePath]);
 

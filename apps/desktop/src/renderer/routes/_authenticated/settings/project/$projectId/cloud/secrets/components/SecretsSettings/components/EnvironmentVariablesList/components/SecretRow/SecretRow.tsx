@@ -62,7 +62,7 @@ export function SecretRow({
 	}, [secret.id, secret.key, organizationId, onDeleted]);
 
 	const handleCopy = useCallback(async () => {
-		await navigator.clipboard.writeText(secret.value);
+		await navigator.clipboard.writeText(secret.value).catch(() => {});
 		setCopied(true);
 		setTimeout(() => setCopied(false), 1500);
 	}, [secret.value]);

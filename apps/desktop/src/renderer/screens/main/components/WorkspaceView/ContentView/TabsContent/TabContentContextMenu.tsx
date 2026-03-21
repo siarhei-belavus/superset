@@ -89,7 +89,7 @@ export function TabContentContextMenu({
 	const handleCopy = async () => {
 		const text = getSelection?.();
 		if (!text) return;
-		await navigator.clipboard.writeText(text);
+		await navigator.clipboard.writeText(text).catch(() => {});
 	};
 
 	const handlePaste = async () => {

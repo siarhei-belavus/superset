@@ -88,11 +88,11 @@ export function TaskContextMenu({
 	};
 
 	const handleCopyId = () => {
-		navigator.clipboard.writeText(task.slug);
+		void navigator.clipboard.writeText(task.slug).catch(() => {});
 	};
 
 	const handleCopyTitle = () => {
-		navigator.clipboard.writeText(task.title);
+		void navigator.clipboard.writeText(task.title).catch(() => {});
 	};
 
 	const handleDelete = () => {

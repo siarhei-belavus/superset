@@ -37,7 +37,7 @@ function CommitHeader({
 	date: Date;
 }) {
 	const handleCopyCommitHash = () => {
-		void navigator.clipboard.writeText(hash);
+		void navigator.clipboard.writeText(hash).catch(() => {});
 	};
 
 	return (

@@ -43,7 +43,7 @@ export function BrowserOverflowMenu({
 
 	const handleCopyUrl = () => {
 		if (currentUrl) {
-			navigator.clipboard.writeText(currentUrl);
+			void navigator.clipboard.writeText(currentUrl).catch(() => {});
 		}
 	};
 
