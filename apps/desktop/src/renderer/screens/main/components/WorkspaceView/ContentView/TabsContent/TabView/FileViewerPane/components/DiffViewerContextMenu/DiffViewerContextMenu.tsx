@@ -1,5 +1,4 @@
 import { ContextMenuItem } from "@superset/ui/context-menu";
-import { toast } from "@superset/ui/sonner";
 import { type MutableRefObject, type ReactNode, useCallback } from "react";
 import { LuSquarePen } from "react-icons/lu";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
@@ -107,7 +106,7 @@ export function DiffViewerContextMenu({
 			openFind() {},
 			dispose() {},
 		};
-	}, [containerRef, getSelectionLines]);
+	}, [containerRef, getSelectionLines, copyToClipboard]);
 
 	const editorActions = useEditorActions({
 		getEditor,

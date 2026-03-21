@@ -10,7 +10,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
 import { cn } from "@superset/ui/utils";
 import { format } from "date-fns";
 import { useCallback, useState } from "react";
-import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import {
 	HiEllipsisHorizontal,
 	HiEye,
@@ -18,6 +17,7 @@ import {
 	HiLockClosed,
 	HiOutlineCodeBracket,
 } from "react-icons/hi2";
+import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 
 interface SecretRowProps {

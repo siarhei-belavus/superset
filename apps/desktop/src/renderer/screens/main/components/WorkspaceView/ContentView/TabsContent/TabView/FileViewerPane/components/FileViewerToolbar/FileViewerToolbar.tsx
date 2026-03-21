@@ -8,10 +8,10 @@ import {
 	TbListDetails,
 	TbPinFilled,
 } from "react-icons/tb";
+import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import type { DiffViewMode } from "shared/changes-types";
 import type { FileViewerMode } from "shared/tabs-types";
 import { PaneToolbarActions } from "../../../components";
-import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import type { SplitOrientation } from "../../../hooks";
 
 interface FileViewerToolbarProps {
