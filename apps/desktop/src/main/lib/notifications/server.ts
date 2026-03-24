@@ -123,6 +123,38 @@ app.get("/hook/complete", (req, res) => {
 	res.json({ success: true, paneId: resolvedPaneId, tabId });
 });
 
+// Programmatic tab/pane focus for external tooling.
+// Mirrors the onNotificationClick flow but triggered via HTTP.
+app.get("/focus", (req, res) => {
+	const { tabId, paneId, workspaceId } = req.query;
+
+	if (!tabId && !paneId) {
+		return res
+			.status(400)
+			.json({ success: false, error: "tabId or paneId is required" });
+	}
+
+	const ids = {
+		tabId: tabId as string | undefined,
+		paneId: paneId as string | undefined,
+		workspaceId: workspaceId as string | undefined,
+	};
+
+	// Bring the window to front (same as onNotificationClick)
+	const mainWindow = BrowserWindow.getAllWindows()[0];
+	if (mainWindow) {
+		if (mainWindow.isMinimized()) {
+			mainWindow.restore();
+		}
+		mainWindow.show();
+		mainWindow.focus();
+	}
+
+	notificationsEmitter.emit(NOTIFICATION_EVENTS.FOCUS_TAB, ids);
+
+	res.json({ success: true, ...ids });
+});
+
 // Health check
 app.get("/health", (_req, res) => {
 	res.json({ status: "ok" });
