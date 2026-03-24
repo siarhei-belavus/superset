@@ -10,6 +10,21 @@ import { createAuthEndpoint } from "better-auth/api";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
+function verificationMatchesInvitation({
+	verificationIdentifier,
+	invitationId,
+	invitationEmail,
+}: {
+	verificationIdentifier: string;
+	invitationId: string;
+	invitationEmail: string;
+}) {
+	return (
+		verificationIdentifier === invitationId ||
+		verificationIdentifier.toLowerCase() === invitationEmail.toLowerCase()
+	);
+}
+
 export const acceptInvitationEndpoint = {
 	id: "accept-invitation",
 	endpoints: {
@@ -56,9 +71,15 @@ export const acceptInvitationEndpoint = {
 					);
 				}
 
-				if (invitation.email !== verification.identifier) {
+				if (
+					!verificationMatchesInvitation({
+						verificationIdentifier: verification.identifier,
+						invitationId: invitation.id,
+						invitationEmail: invitation.email,
+					})
+				) {
 					console.log(
-						"[invitation/accept] ERROR - Token email does not match invitation email",
+						"[invitation/accept] ERROR - Token does not match invitation",
 					);
 					return ctx.json(
 						{ error: "This invitation link is invalid or has expired." },

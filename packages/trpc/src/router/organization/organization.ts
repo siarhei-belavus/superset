@@ -4,6 +4,7 @@ import { members, organizations } from "@superset/db/schema";
 import {
 	sessions as authSessions,
 	invitations,
+	verifications,
 } from "@superset/db/schema/auth";
 import { seedDefaultStatuses } from "@superset/db/seed-default-statuses";
 import { findOrgMembership } from "@superset/db/utils";
@@ -12,7 +13,7 @@ import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, eq, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import { generateImagePathname, uploadImage } from "../../lib/upload";
-import { protectedProcedure } from "../../trpc";
+import { protectedProcedure, publicProcedure } from "../../trpc";
 import { verifyOrgAdmin } from "../integration/utils";
 
 async function getInvitationById(invitationId: string) {
@@ -36,6 +37,21 @@ async function getInvitationById(invitationId: string) {
 
 function isInvitationExpired(expiresAt: Date) {
 	return new Date(expiresAt) < new Date();
+}
+
+function verificationMatchesInvitation({
+	verificationIdentifier,
+	invitationId,
+	invitationEmail,
+}: {
+	verificationIdentifier: string;
+	invitationId: string;
+	invitationEmail: string;
+}) {
+	return (
+		verificationIdentifier === invitationId ||
+		verificationIdentifier.toLowerCase() === invitationEmail.toLowerCase()
+	);
 }
 
 export const organizationRouter = {
@@ -68,6 +84,50 @@ export const organizationRouter = {
 					name: invitation.inviter.name,
 					email: invitation.inviter.email,
 					image: invitation.inviter.image,
+				},
+			};
+		}),
+
+	getInvitationPreview: publicProcedure
+		.input(
+			z.object({
+				invitationId: z.uuid(),
+				token: z.string().min(1),
+			}),
+		)
+		.query(async ({ input }) => {
+			const invitation = await getInvitationById(input.invitationId);
+			const verification = await db.query.verifications.findFirst({
+				where: eq(verifications.value, input.token),
+			});
+
+			const hasValidToken =
+				verification &&
+				new Date() <= new Date(verification.expiresAt) &&
+				verificationMatchesInvitation({
+					verificationIdentifier: verification.identifier,
+					invitationId: invitation.id,
+					invitationEmail: invitation.email,
+				});
+
+			if (!hasValidToken) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Invitation not found",
+				});
+			}
+
+			return {
+				role: invitation.role,
+				status: invitation.status,
+				expiresAt: invitation.expiresAt,
+				isExpired: isInvitationExpired(invitation.expiresAt),
+				organization: {
+					name: invitation.organization.name,
+					logo: invitation.organization.logo,
+				},
+				inviter: {
+					name: invitation.inviter.name,
 				},
 			};
 		}),

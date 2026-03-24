@@ -1,6 +1,8 @@
 import { Button } from "@superset/ui/button";
 import { Users } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import { api } from "../../../trpc/server";
 import { AcceptInvitationButton } from "./AcceptInvitationButton";
 
 interface PageProps {
@@ -14,8 +16,31 @@ export default async function AcceptInvitationPage({
 }: PageProps) {
 	const { invitationId } = await params;
 	const { token } = await searchParams;
+	const trpc = await api();
+
+	let invitation: Awaited<
+		ReturnType<typeof trpc.organization.getInvitationPreview.query>
+	> | null;
 
 	if (!token) {
+		invitation = null;
+	} else {
+		try {
+			invitation = await trpc.organization.getInvitationPreview.query({
+				invitationId,
+				token,
+			});
+		} catch (_error) {
+			invitation = null;
+		}
+	}
+
+	if (
+		!invitation ||
+		invitation.isExpired ||
+		invitation.status !== "pending" ||
+		!token
+	) {
 		return (
 			<div className="flex min-h-screen items-center justify-center p-4">
 				<div className="max-w-lg space-y-6 text-center">
@@ -43,15 +68,24 @@ export default async function AcceptInvitationPage({
 	return (
 		<div className="flex min-h-screen items-center justify-center p-4">
 			<div className="max-w-lg space-y-6 text-center">
-				<div className="mx-auto flex h-16 w-16 items-center justify-center rounded-xl border border-border">
-					<Users className="h-8 w-8 text-muted-foreground" />
-				</div>
+				{invitation.organization.logo && (
+					<div className="relative mx-auto h-16 w-16">
+						<Image
+							src={invitation.organization.logo}
+							alt={invitation.organization.name}
+							fill
+							className="rounded-lg object-contain"
+						/>
+					</div>
+				)}
 
 				<div className="space-y-4">
-					<h1 className="text-2xl font-semibold">Accept team invitation</h1>
+					<h1 className="text-2xl font-semibold">
+						You've been invited to join {invitation.organization.name}
+					</h1>
 					<p className="text-muted-foreground">
-						Continue to accept this invitation and sign in to the associated
-						account.
+						{invitation.inviter.name} invited you to join as a {invitation.role}
+						.
 					</p>
 				</div>
 
