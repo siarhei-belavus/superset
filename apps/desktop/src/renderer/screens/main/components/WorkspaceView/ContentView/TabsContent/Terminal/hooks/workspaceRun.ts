@@ -6,8 +6,8 @@ import {
 	setPaneWorkspaceRunState,
 } from "renderer/stores/tabs/workspace-run";
 import {
-	recoverWorkspaceRunPaneWithDeps,
 	type RecoverWorkspaceRunPaneOptions,
+	recoverWorkspaceRunPaneWithDeps,
 } from "./workspaceRunRecovery";
 
 export {
