@@ -108,6 +108,7 @@ export function createApp(options?: CreateAppOptions): CreateAppResult {
 	// SECURITY: Authentication middleware - validate session token on ALL requests
 	// This prevents unauthorized access from malicious websites
 	if (options?.sessionToken) {
+		const expectedToken = options.sessionToken; // Capture for type safety
 		app.use("*", async (c, next) => {
 			// Allow CORS preflight requests
 			if (c.req.method === "OPTIONS") {
@@ -127,7 +128,7 @@ export function createApp(options?: CreateAppOptions): CreateAppResult {
 				: authHeader;
 
 			// Use constant-time comparison to prevent timing attacks
-			if (!secureCompare(token, options.sessionToken)) {
+			if (!secureCompare(token, expectedToken)) {
 				return c.json({ error: "Unauthorized: Invalid session token" }, 401);
 			}
 
