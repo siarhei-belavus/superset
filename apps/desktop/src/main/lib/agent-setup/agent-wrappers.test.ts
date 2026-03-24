@@ -1042,3 +1042,80 @@ describe("agent-wrappers codex hooks.json", () => {
 		).toBeNull();
 	});
 });
+
+describe("claude wrapper execution", () => {
+	beforeEach(() => {
+		mockedHomeDir = path.join(TEST_ROOT, "home");
+		mkdirSync(TEST_BIN_DIR, { recursive: true });
+		mkdirSync(TEST_HOOKS_DIR, { recursive: true });
+	});
+
+	afterEach(() => {
+		rmSync(TEST_ROOT, { recursive: true, force: true });
+	});
+
+	it("finds and executes the real binary instead of recursing", () => {
+		const realBinDir = path.join(TEST_ROOT, "real-bin");
+		mkdirSync(realBinDir, { recursive: true });
+
+		const realClaude = path.join(realBinDir, "claude");
+		writeFileSync(realClaude, '#!/bin/bash\necho "real-claude-executed"\n', {
+			mode: 0o755,
+		});
+		chmodSync(realClaude, 0o755);
+
+		const wrapperScript = buildWrapperScript("claude", 'exec "$REAL_BIN" "$@"');
+		const wrapperPath = path.join(TEST_BIN_DIR, "claude");
+		writeFileSync(wrapperPath, wrapperScript, { mode: 0o755 });
+		chmodSync(wrapperPath, 0o755);
+
+		const output = execFileSync(wrapperPath, [], {
+			env: {
+				...process.env,
+				PATH: `${TEST_BIN_DIR}:${realBinDir}:${process.env.PATH || ""}`,
+				HOME: mockedHomeDir,
+			},
+			encoding: "utf-8",
+			timeout: 5000,
+		});
+
+		expect(output.trim()).toBe("real-claude-executed");
+	});
+
+	it("self-dir filter prevents infinite exec loop when BIN_DIR does not match actual path", () => {
+		// Simulate a stale wrapper: the hardcoded BIN_DIR in the script
+		// differs from the directory the wrapper actually lives in.
+		// Without the self-dir filter, find_real_binary would find the
+		// wrapper itself and exec it in an infinite loop (SIGKILL).
+		const actualBinDir = path.join(TEST_ROOT, "actual-bin");
+		mkdirSync(actualBinDir, { recursive: true });
+
+		// Build wrapper with TEST_BIN_DIR baked in, but place it in actualBinDir.
+		// The hardcoded case pattern won't filter actualBinDir, but the
+		// runtime $_SUPERSET_SELF_DIR resolves to actualBinDir and catches it.
+		const wrapperScript = buildWrapperScript("claude", 'exec "$REAL_BIN" "$@"');
+		const wrapperPath = path.join(actualBinDir, "claude");
+		writeFileSync(wrapperPath, wrapperScript, { mode: 0o755 });
+		chmodSync(wrapperPath, 0o755);
+
+		// PATH only contains actualBinDir (not TEST_BIN_DIR), so the
+		// hardcoded BIN_DIR pattern won't help. The self-dir filter
+		// should catch it and report the binary as not found.
+		try {
+			execFileSync(wrapperPath, [], {
+				env: {
+					PATH: actualBinDir,
+					HOME: mockedHomeDir,
+				},
+				encoding: "utf-8",
+				timeout: 5000,
+			});
+			// Should not reach here - wrapper should exit 127
+			expect(true).toBe(false);
+		} catch (error: unknown) {
+			const execError = error as { status: number; stderr: string };
+			expect(execError.status).toBe(127);
+			expect(execError.stderr).toContain("Superset: claude not found");
+		}
+	});
+});

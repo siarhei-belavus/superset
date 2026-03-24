@@ -92,7 +92,7 @@ function buildRealBinaryResolver(): string {
     [ -z "$dir" ] && continue
     dir="\${dir%/}"
     case "$dir" in
-      "${BIN_DIR}"|"$HOME"/.superset/bin|"$HOME"/.superset-*/bin) continue ;;
+      "${BIN_DIR}"|"$HOME"/.superset/bin|"$HOME"/.superset-*/bin|"$_SUPERSET_SELF_DIR") continue ;;
     esac
     if [ -x "$dir/$name" ] && [ ! -d "$dir/$name" ]; then
       printf "%s\\n" "$dir/$name"
@@ -119,6 +119,13 @@ export function buildWrapperScript(
 	return `#!/bin/bash
 ${WRAPPER_MARKER}
 # Superset wrapper for ${binaryName}
+
+# Resolve this script's own directory so find_real_binary always filters
+# it out, even when the hardcoded BIN_DIR no longer matches (e.g. after
+# the wrapper is relocated or reached via a symlink).
+_SUPERSET_SELF_DIR="\${0%/*}"
+[ "$_SUPERSET_SELF_DIR" = "$0" ] && _SUPERSET_SELF_DIR="."
+_SUPERSET_SELF_DIR="$(cd "$_SUPERSET_SELF_DIR" 2>/dev/null && pwd)"
 
 ${buildRealBinaryResolver()}
 REAL_BIN="$(find_real_binary "${binaryName}")"
