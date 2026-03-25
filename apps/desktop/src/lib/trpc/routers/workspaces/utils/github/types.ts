@@ -135,6 +135,7 @@ export const GHPRResponseSchema = z.object({
 	deletions: z.number(),
 	headRefOid: z.string(),
 	headRefName: z.string(),
+	baseRefName: z.string(),
 	headRepository: z
 		.object({
 			name: z.string().optional(),

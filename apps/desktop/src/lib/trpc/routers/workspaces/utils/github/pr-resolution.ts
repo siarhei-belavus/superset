@@ -9,7 +9,7 @@ import {
 } from "./types";
 
 const PR_JSON_FIELDS =
-	"number,title,url,state,isDraft,mergedAt,additions,deletions,headRefOid,headRefName,headRepository,headRepositoryOwner,isCrossRepository,reviewDecision,statusCheckRollup,reviewRequests";
+	"number,title,url,state,isDraft,mergedAt,additions,deletions,headRefOid,headRefName,baseRefName,headRepository,headRepositoryOwner,isCrossRepository,reviewDecision,statusCheckRollup,reviewRequests";
 
 export async function getPRForBranch(
 	worktreePath: string,
@@ -333,6 +333,7 @@ function formatPRData(data: GHPRResponse): NonNullable<GitHubStatus["pr"]> {
 		additions: data.additions,
 		deletions: data.deletions,
 		headRefName: data.headRefName,
+		baseRefName: data.baseRefName,
 		headRepositoryOwner: data.headRepositoryOwner?.login,
 		headRepositoryName: data.headRepository?.name,
 		isCrossRepository: data.isCrossRepository,

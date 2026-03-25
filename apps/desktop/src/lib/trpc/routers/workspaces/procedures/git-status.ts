@@ -5,6 +5,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { localDb } from "main/lib/local-db";
 import { z } from "zod";
 import { publicProcedure, router } from "../../..";
+import { setBranchBaseConfig } from "../utils/base-branch-config";
 import {
 	getProject,
 	getWorkspace,
@@ -166,11 +167,30 @@ export const createGitStatusProcedures = () => {
 				const freshStatus = await fetchGitHubPRStatus(worktree.path);
 
 				if (freshStatus) {
+					const prBaseRefName = freshStatus.pr?.baseRefName;
+					const storedBaseBranch = worktree.baseBranch;
+					const baseBranchChanged =
+						prBaseRefName &&
+						storedBaseBranch &&
+						prBaseRefName !== storedBaseBranch;
+
 					localDb
 						.update(worktrees)
-						.set({ githubStatus: freshStatus })
+						.set({
+							githubStatus: freshStatus,
+							...(baseBranchChanged ? { baseBranch: prBaseRefName } : {}),
+						})
 						.where(eq(worktrees.id, worktree.id))
 						.run();
+
+					if (baseBranchChanged) {
+						await setBranchBaseConfig({
+							repoPath: worktree.path,
+							branch: worktree.branch,
+							compareBaseBranch: prBaseRefName,
+							isExplicit: false,
+						}).catch(() => {});
+					}
 				}
 
 				return freshStatus;
