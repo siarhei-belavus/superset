@@ -299,10 +299,22 @@ export function FileViewerPane({
 		[documentKey, handleSaveFile, paneId],
 	);
 
+	// Track which rawFileData reference was last applied so we can distinguish
+	// "rawFileData actually changed" from "isDirty just transitioned to false".
+	// Without this, saving a file causes the effect to re-run with stale
+	// rawFileData (pre-edit content), which resets the editor buffer and cursor
+	// position. See: https://github.com/nicepkg/superset/issues/2876
+	const lastAppliedRawDataRef = useRef<typeof rawFileData>(undefined);
+
 	useEffect(() => {
 		if (viewMode === "diff" || isLoadingRaw || !rawFileData?.ok || isDirty) {
 			return;
 		}
+
+		if (rawFileData === lastAppliedRawDataRef.current) {
+			return;
+		}
+		lastAppliedRawDataRef.current = rawFileData;
 
 		applyLoadedDocumentContent(
 			documentKey,

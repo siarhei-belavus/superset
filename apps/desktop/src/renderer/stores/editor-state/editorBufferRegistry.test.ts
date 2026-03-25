@@ -5,6 +5,7 @@ import {
 	getDocumentBaselineContent,
 	getDocumentCurrentContent,
 	hasInitializedDocumentBuffer,
+	markDocumentSavedContent,
 	setDocumentCurrentContent,
 	setDocumentLoadedContent,
 } from "./editorBufferRegistry";
@@ -85,5 +86,69 @@ describe("editorBufferRegistry", () => {
 		const restored = discardDocumentCurrentContent(TEST_KEY);
 		expect(restored).toBe(raw);
 		expect(getDocumentCurrentContent(TEST_KEY)).toBe(raw);
+	});
+
+	/**
+	 * Reproduction test for GitHub issue #2876:
+	 * Cursor and scroll position reset when saving a file in raw mode.
+	 *
+	 * Root cause: after a successful save, markDocumentSavedContent updates the
+	 * baseline to the saved content and sets dirty=false. The query invalidation
+	 * then triggers a refetch, but before the refetch completes, the useEffect
+	 * in FileViewerPane re-runs (because isDirty changed) and calls
+	 * applyLoadedDocumentContent with the stale pre-edit rawFileData. This
+	 * unconditionally overwrote both baseline and current content, causing
+	 * renderedContent to change and CodeEditor to dispatch a full document
+	 * replacement — which resets the cursor to position 0.
+	 *
+	 * The buffer-level fix ensures that markDocumentSavedContent correctly
+	 * updates both baseline and current content so that a subsequent
+	 * setDocumentLoadedContent with the same content is a no-op in terms of
+	 * observable state (same strings). The primary fix is in FileViewerPane
+	 * where a ref guard prevents re-applying stale rawFileData when isDirty
+	 * transitions from true to false.
+	 */
+	test("markDocumentSavedContent updates baseline to saved content (issue #2876)", () => {
+		// 1. File loaded from disk
+		const original = "line 1\nline 2\nline 3\n";
+		setDocumentLoadedContent(TEST_KEY, original);
+
+		// 2. User edits the file
+		const edited = "line 1\nline 2 modified\nline 3\n";
+		setDocumentCurrentContent(TEST_KEY, edited);
+
+		// 3. User saves — markDocumentSavedContent updates baseline to saved content
+		markDocumentSavedContent(TEST_KEY, edited, edited);
+		expect(getDocumentBaselineContent(TEST_KEY)).toBe(edited);
+		expect(getDocumentCurrentContent(TEST_KEY)).toBe(edited);
+
+		// 4. Post-save refetch with same content should produce identical state
+		setDocumentLoadedContent(TEST_KEY, edited);
+		expect(getDocumentBaselineContent(TEST_KEY)).toBe(edited);
+		expect(getDocumentCurrentContent(TEST_KEY)).toBe(edited);
+	});
+
+	test("setDocumentLoadedContent with stale content after save would reset buffer (issue #2876)", () => {
+		// This test documents the buffer-level behavior when stale data is applied.
+		// The fix in FileViewerPane prevents this from happening by using a ref
+		// guard to skip applying stale rawFileData.
+
+		// 1. File loaded from disk with original content
+		const original = "original content";
+		setDocumentLoadedContent(TEST_KEY, original);
+
+		// 2. User edits
+		const edited = "edited content";
+		setDocumentCurrentContent(TEST_KEY, edited);
+
+		// 3. Save succeeds — baseline is now the edited content
+		markDocumentSavedContent(TEST_KEY, edited, edited);
+		expect(getDocumentBaselineContent(TEST_KEY)).toBe(edited);
+
+		// 4. If stale rawFileData (original content) were applied, it WOULD reset
+		//    the buffer. The FileViewerPane ref guard prevents this from happening.
+		setDocumentLoadedContent(TEST_KEY, original);
+		expect(getDocumentBaselineContent(TEST_KEY)).toBe(original);
+		expect(getDocumentCurrentContent(TEST_KEY)).toBe(original);
 	});
 });
