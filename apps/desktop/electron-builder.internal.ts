@@ -15,6 +15,7 @@ const config: Configuration = {
 	publish: null,
 	mac: {
 		...baseMac,
+		identity: null,
 		hardenedRuntime: false,
 		gatekeeperAssess: false,
 		notarize: false,
