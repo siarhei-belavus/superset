@@ -45,7 +45,12 @@ jobs:
       - name: Compile app with electron-vite
         working-directory: apps/desktop
         env:
-          SKIP_ENV_VALIDATION: "1"
+          DESKTOP_LOCAL_ONLY: "1"
+          NEXT_PUBLIC_API_URL: "http://127.0.0.1:9"
+          NEXT_PUBLIC_ELECTRIC_URL: "http://127.0.0.1:9"
+          NEXT_PUBLIC_STREAMS_URL: "http://127.0.0.1:9"
+          NEXT_PUBLIC_WEB_URL: "http://127.0.0.1:9"
+          NEXT_PUBLIC_DOCS_URL: "http://127.0.0.1:9"
           SUPERSET_WORKSPACE_NAME: internal
         run: bun run compile:app
 

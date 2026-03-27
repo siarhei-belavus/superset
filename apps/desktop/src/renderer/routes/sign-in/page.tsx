@@ -7,6 +7,7 @@ import { FcGoogle } from "react-icons/fc";
 import { env } from "renderer/env.renderer";
 import { track } from "renderer/lib/analytics";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { DESKTOP_DISTRIBUTION } from "shared/desktop-distribution";
 import { SupersetLogo } from "./components/SupersetLogo";
 import { useSessionRecovery } from "./hooks/useSessionRecovery";
 
@@ -19,7 +20,7 @@ function SignInPage() {
 	const { hasLocalToken, isPending, session } = useSessionRecovery();
 
 	// Dev bypass: skip sign-in entirely
-	if (env.SKIP_ENV_VALIDATION) {
+	if (env.AUTH_BYPASS) {
 		return <Navigate to="/workspace" replace />;
 	}
 
@@ -54,13 +55,18 @@ function SignInPage() {
 
 					<div className="text-center mb-8">
 						<h1 className="text-xl font-semibold text-foreground mb-2">
-							Welcome to Superset
+							{`Welcome to ${DESKTOP_DISTRIBUTION.productName}`}
 						</h1>
 						<p className="text-sm text-muted-foreground">
 							{hasLocalToken
 								? "Restoring your session"
 								: "Sign in to get started"}
 						</p>
+						{DESKTOP_DISTRIBUTION.isModifiedBuild ? (
+							<p className="mt-2 text-xs text-muted-foreground/70">
+								{DESKTOP_DISTRIBUTION.modifiedBuildDisclaimer}
+							</p>
+						) : null}
 					</div>
 
 					<div className="flex flex-col gap-3 w-full max-w-xs">

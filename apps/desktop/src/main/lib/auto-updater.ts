@@ -6,6 +6,7 @@ import { setSkipQuitConfirmation } from "main/index";
 import { prerelease } from "semver";
 import { AUTO_UPDATE_STATUS, type AutoUpdateStatus } from "shared/auto-update";
 import { PLATFORM } from "shared/constants";
+import { DESKTOP_DISTRIBUTION } from "shared/desktop-distribution";
 
 const UPDATE_CHECK_INTERVAL_MS = 1000 * 60 * 60 * 4; // 4 hours
 
@@ -23,13 +24,12 @@ function isPrereleaseBuild(): boolean {
 const IS_PRERELEASE = isPrereleaseBuild();
 const IS_AUTO_UPDATE_PLATFORM = PLATFORM.IS_MAC || PLATFORM.IS_LINUX;
 
-// Use explicit feed URLs to ensure we always fetch platform-specific manifests
-// (for example latest-mac.yml and latest-linux.yml) from the correct release.
-// - Stable: fetches from /releases/latest/download/ (latest non-prerelease)
-// - Canary: fetches from /releases/download/desktop-canary/ (rolling canary tag)
+const STABLE_UPDATE_FEED_URL = env.DESKTOP_UPDATER_BASE_URL ?? null;
+const PRERELEASE_UPDATE_FEED_URL =
+	env.DESKTOP_CANARY_UPDATER_BASE_URL ?? STABLE_UPDATE_FEED_URL;
 const UPDATE_FEED_URL = IS_PRERELEASE
-	? "https://github.com/superset-sh/superset/releases/download/desktop-canary"
-	: "https://github.com/superset-sh/superset/releases/latest/download";
+	? PRERELEASE_UPDATE_FEED_URL
+	: STABLE_UPDATE_FEED_URL;
 
 export interface AutoUpdateStatusEvent {
 	status: AutoUpdateStatus;
@@ -135,6 +135,16 @@ export function checkForUpdatesInteractive(): void {
 		});
 		return;
 	}
+	if (!UPDATE_FEED_URL) {
+		dialog.showMessageBox({
+			type: "info",
+			title: "Updates",
+			message: `${DESKTOP_DISTRIBUTION.productName} updates are disabled for this build.`,
+			detail:
+				"Configure DESKTOP_UPDATER_BASE_URL to enable a fork-specific update feed.",
+		});
+		return;
+	}
 
 	isDismissed = false;
 	emitStatus(AUTO_UPDATE_STATUS.CHECKING);
@@ -200,7 +210,16 @@ export function simulateError(): void {
 }
 
 export function setupAutoUpdater(): void {
-	if (env.NODE_ENV === "development" || !IS_AUTO_UPDATE_PLATFORM) {
+	if (
+		env.NODE_ENV === "development" ||
+		!IS_AUTO_UPDATE_PLATFORM ||
+		!UPDATE_FEED_URL
+	) {
+		if (env.NODE_ENV !== "development" && IS_AUTO_UPDATE_PLATFORM && !UPDATE_FEED_URL) {
+			console.info(
+				`[auto-updater] Disabled: no fork update feed configured for ${DESKTOP_DISTRIBUTION.productName}`,
+			);
+		}
 		return;
 	}
 

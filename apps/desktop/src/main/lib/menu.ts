@@ -1,9 +1,11 @@
+import { join } from "node:path";
 import { COMPANY } from "@superset/shared/constants";
 import { app, BrowserWindow, Menu, shell } from "electron";
 import { env } from "main/env.main";
 import { appState } from "main/lib/app-state";
 import { hotkeysEmitter } from "main/lib/hotkeys-events";
 import { resetTerminalStateDev } from "main/lib/terminal/dev-reset";
+import { DESKTOP_DISTRIBUTION } from "shared/desktop-distribution";
 import {
 	getCurrentPlatform,
 	getEffectiveHotkey,
@@ -26,6 +28,12 @@ function getMenuAccelerator(id: HotkeyId): string | undefined {
 	const keys = getEffectiveHotkey(id, overrides, platform);
 	const accelerator = toElectronAccelerator(keys, platform);
 	return accelerator ?? undefined;
+}
+
+function getLegalNoticePath(): string {
+	return app.isPackaged
+		? join(process.resourcesPath, "legal", "MODIFIED_BUILD_NOTICE.md")
+		: join(app.getAppPath(), "MODIFIED_BUILD_NOTICE.md");
 }
 
 export function registerMenuHotkeyUpdates() {
@@ -93,6 +101,16 @@ export function createApplicationMenu() {
 						shell.openExternal(COMPANY.DOCS_URL);
 					},
 				},
+				...(DESKTOP_DISTRIBUTION.isModifiedBuild
+					? [
+							{
+								label: "Modified Build Notice",
+								click: () => {
+									void shell.openPath(getLegalNoticePath());
+								},
+							},
+						]
+					: []),
 				{ type: "separator" },
 				{
 					label: "Contact Us",
@@ -166,6 +184,17 @@ export function createApplicationMenu() {
 			submenu: [
 				{ role: "about" },
 				{ type: "separator" },
+				...(DESKTOP_DISTRIBUTION.isModifiedBuild
+					? [
+							{
+								label: "Modified Build Notice",
+								click: () => {
+									void shell.openPath(getLegalNoticePath());
+								},
+							},
+							{ type: "separator" as const },
+						]
+					: []),
 				{
 					label: "Settings...",
 					accelerator: openSettingsAccelerator,

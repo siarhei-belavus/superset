@@ -42,6 +42,10 @@ export default defineConfig({
 				process.env.SKIP_ENV_VALIDATION,
 				"",
 			),
+			"process.env.DESKTOP_LOCAL_ONLY": defineEnv(
+				process.env.DESKTOP_LOCAL_ONLY,
+				"",
+			),
 			"process.env.NEXT_PUBLIC_API_URL": defineEnv(
 				process.env.NEXT_PUBLIC_API_URL,
 				"https://api.superset.sh",
@@ -69,6 +73,12 @@ export default defineConfig({
 			"process.env.ELECTRIC_PORT": defineEnv(process.env.ELECTRIC_PORT),
 			"process.env.SUPERSET_WORKSPACE_NAME": defineEnv(
 				process.env.SUPERSET_WORKSPACE_NAME,
+			),
+			"process.env.DESKTOP_UPDATER_BASE_URL": defineEnv(
+				process.env.DESKTOP_UPDATER_BASE_URL,
+			),
+			"process.env.DESKTOP_CANARY_UPDATER_BASE_URL": defineEnv(
+				process.env.DESKTOP_CANARY_UPDATER_BASE_URL,
 			),
 		},
 
@@ -115,6 +125,10 @@ export default defineConfig({
 				process.env.SKIP_ENV_VALIDATION,
 				"",
 			),
+			"process.env.DESKTOP_LOCAL_ONLY": defineEnv(
+				process.env.DESKTOP_LOCAL_ONLY,
+				"",
+			),
 			__APP_VERSION__: defineEnv(version),
 		},
 
@@ -133,6 +147,10 @@ export default defineConfig({
 			"process.env.NODE_ENV": defineEnv(process.env.NODE_ENV),
 			"process.env.SKIP_ENV_VALIDATION": defineEnv(
 				process.env.SKIP_ENV_VALIDATION,
+				"",
+			),
+			"process.env.DESKTOP_LOCAL_ONLY": defineEnv(
+				process.env.DESKTOP_LOCAL_ONLY,
 				"",
 			),
 			"process.platform": defineEnv(process.platform),

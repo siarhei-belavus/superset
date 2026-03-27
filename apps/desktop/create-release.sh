@@ -17,7 +17,7 @@
 # 3. Delete existing release/tag if republishing same version
 # 4. Update package.json version
 # 5. Push changes and create a PR if not on main branch
-# 6. Create and push a git tag to trigger the release workflow
+# 6. Create and push a git tag to trigger the default unsigned release workflow
 # 7. Monitor the GitHub Actions workflow in real-time
 # 8. Leave release as draft (default) or auto-publish with --publish flag
 # 9. With --merge flag: merge the PR and delete the branch after publishing
@@ -117,7 +117,7 @@ if [ -z "$VERSION" ]; then
     fi
 
     # Fetch the latest desktop release version from GitHub
-    # Desktop releases use tags like "desktop-v0.0.1"
+# Desktop unsigned releases use tags like "desktop-v0.0.1"
     LATEST_TAG=$(gh release list --json tagName --jq '[.[] | select(.tagName | startswith("desktop-v"))] | .[0].tagName' 2>/dev/null || echo "")
     if [ -n "$LATEST_TAG" ]; then
         # Extract version from tag (e.g., "desktop-v0.0.1" -> "0.0.1")

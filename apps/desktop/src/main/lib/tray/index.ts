@@ -19,6 +19,7 @@ import {
 } from "main/lib/terminal";
 import { getTerminalHostClient } from "main/lib/terminal-host/client";
 import type { ListSessionsResponse } from "main/lib/terminal-host/types";
+import { DESKTOP_DISTRIBUTION } from "shared/desktop-distribution";
 
 const POLL_INTERVAL_MS = 5000;
 
@@ -185,7 +186,7 @@ function buildSessionsSubmenu(
 					label: formatSessionLabel(session),
 					submenu: [
 						{
-							label: "Open in Superset",
+							label: `Open in ${DESKTOP_DISTRIBUTION.productName}`,
 							click: () => openSessionInSuperset(session.workspaceId),
 						},
 						{
@@ -223,8 +224,8 @@ async function quitApp(): Promise<void> {
 		buttons: ["Cancel", "Keep Sessions", "Kill Sessions"],
 		defaultId: 1,
 		cancelId: 0,
-		title: "Quit Superset?",
-		message: "Quit Superset?",
+		title: `Quit ${DESKTOP_DISTRIBUTION.productName}?`,
+		message: `Quit ${DESKTOP_DISTRIBUTION.productName}?`,
 		detail:
 			"Keep sessions running in the background, or kill all sessions and shut down the daemon?",
 	});
@@ -247,7 +248,7 @@ async function quitApp(): Promise<void> {
 					buttons: ["OK"],
 					defaultId: 0,
 					title: "Failed to kill sessions",
-					message: "Superset could not kill terminal sessions.",
+					message: `${DESKTOP_DISTRIBUTION.productName} could not kill terminal sessions.`,
 					detail:
 						"The app will stay open so you can retry or quit while keeping sessions running in the background.",
 				})
@@ -283,7 +284,7 @@ async function updateTrayMenu(): Promise<void> {
 		},
 		{ type: "separator" },
 		{
-			label: "Open Superset",
+			label: `Open ${DESKTOP_DISTRIBUTION.productName}`,
 			click: showWindow,
 		},
 		{
@@ -318,7 +319,7 @@ export function initTray(): void {
 		}
 
 		tray = new Tray(icon);
-		tray.setToolTip("Superset");
+		tray.setToolTip(DESKTOP_DISTRIBUTION.productName);
 
 		updateTrayMenu().catch((error) => {
 			console.error("[Tray] Failed to build initial menu:", error);

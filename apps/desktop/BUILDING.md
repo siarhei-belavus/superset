@@ -24,10 +24,31 @@ bun run dev
 
 This keeps local dev state under `~/.superset-dev` instead of `~/.superset` and helps distinguish the dev app/workspace from the installed app.
 
-For internal team distribution of a modified build, include the packaged legal notices under `Contents/Resources/legal/` in the macOS app bundle. This repo ships:
+## Modified Build Distribution
+
+When distributing a modified desktop build, keep the packaged legal notices under `Contents/Resources/legal/` in the macOS app bundle. This repo already ships:
 
 - `LICENSE.md` (upstream ELv2 license)
 - `apps/desktop/MODIFIED_BUILD_NOTICE.md` (modified-build notice)
+
+The default Electron Builder config already copies both files into the packaged app bundle.
+
+Recommended checklist for a redistributed forked build:
+
+1. Keep `LICENSE.md` in the distributed app/archive.
+2. Keep `MODIFIED_BUILD_NOTICE.md` in the distributed app/archive and update it to describe your fork.
+3. Add a prominent notice in your download page and/or app UI that this is a modified build and not an official Superset release.
+4. Do not remove or obscure upstream licensing, copyright, or trademark notices.
+5. Do not market the build as an official Superset release.
+6. Review whether your distribution model is a downloadable app or a hosted/managed service. ELv2 redistribution of an app build is different from offering the software as a managed service.
+
+Suggested wording for external distribution:
+
+- `Modified build of Superset desktop`
+- `Not an official Superset release`
+- `Distributed with local modifications under Elastic License 2.0`
+
+If you are preparing a public or customer-facing fork, also review `apps/desktop/RELEASE.md` and update product name, icons, and release copy so users are not misled about the build's origin.
 
 # Release
 

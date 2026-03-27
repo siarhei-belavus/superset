@@ -57,8 +57,8 @@ function AuthenticatedLayout() {
 	const isV2CloudEnabled =
 		useFeatureFlagEnabled(FEATURE_FLAGS.V2_CLOUD) ?? false;
 
-	const isSignedIn = env.SKIP_ENV_VALIDATION || !!session?.user;
-	const activeOrganizationId = env.SKIP_ENV_VALIDATION
+	const isSignedIn = env.AUTH_BYPASS || !!session?.user;
+	const activeOrganizationId = env.AUTH_BYPASS
 		? MOCK_ORG_ID
 		: session?.session?.activeOrganizationId;
 
@@ -132,12 +132,12 @@ function AuthenticatedLayout() {
 		},
 	});
 
-	if (isPending && !hasLocalToken && !env.SKIP_ENV_VALIDATION) {
+	if (isPending && !hasLocalToken && !env.AUTH_BYPASS) {
 		return <Navigate to="/sign-in" replace />;
 	}
 	if (
 		(isPending || (isRefetching && !session?.user && hasLocalToken)) &&
-		!env.SKIP_ENV_VALIDATION
+		!env.AUTH_BYPASS
 	) {
 		return (
 			<div className="flex h-screen w-screen items-center justify-center bg-background">

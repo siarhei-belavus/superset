@@ -39,10 +39,16 @@ const rawEnv = {
 // Only allow skipping validation in development (never in production)
 const SKIP_ENV_VALIDATION =
 	process.env.NODE_ENV === "development" && !!process.env.SKIP_ENV_VALIDATION;
+const DESKTOP_LOCAL_ONLY =
+	process.env.DESKTOP_LOCAL_ONLY === "1" ||
+	process.env.DESKTOP_LOCAL_ONLY === "true";
+const AUTH_BYPASS = SKIP_ENV_VALIDATION || DESKTOP_LOCAL_ONLY;
 
 export const env = {
 	...(SKIP_ENV_VALIDATION
 		? (rawEnv as z.infer<typeof envSchema>)
 		: envSchema.parse(rawEnv)),
 	SKIP_ENV_VALIDATION,
+	DESKTOP_LOCAL_ONLY,
+	AUTH_BYPASS,
 };

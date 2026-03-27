@@ -11,16 +11,27 @@ import {
 	packagedAsarUnpackGlobs,
 	packagedNodeModuleCopies,
 } from "./runtime-dependencies";
+import { DESKTOP_DISTRIBUTION } from "./src/shared/desktop-distribution";
 
 const currentYear = new Date().getFullYear();
 const author = pkg.author?.name ?? pkg.author;
 const productName = pkg.productName;
+const stableUpdateRepoOwner = process.env.DESKTOP_UPDATER_GITHUB_OWNER?.trim();
+const stableUpdateRepoName = process.env.DESKTOP_UPDATER_GITHUB_REPO?.trim();
+const publishConfig =
+	stableUpdateRepoOwner && stableUpdateRepoName
+		? {
+				provider: "github" as const,
+				owner: stableUpdateRepoOwner,
+				repo: stableUpdateRepoName,
+			}
+		: undefined;
 const macIconPath = join(pkg.resources, "build/icons/icon.icns");
 const linuxIconPath = join(pkg.resources, "build/icons");
 const winIconPath = join(pkg.resources, "build/icons/icon.ico");
 
 const config: Configuration = {
-	appId: "com.superset.desktop",
+	appId: DESKTOP_DISTRIBUTION.appId,
 	productName,
 	copyright: `Copyright © ${currentYear} — ${author}`,
 	electronVersion: pkg.devDependencies.electron.replace(/^\^/, ""),
@@ -28,13 +39,12 @@ const config: Configuration = {
 	// Generate update manifests for all channels (latest.yml, canary.yml, etc.)
 	// This enables proper channel-based auto-updates following electron-builder conventions
 	generateUpdatesFilesForAllChannels: true,
-
-	// Generate latest-mac.yml for auto-update (workflow handles actual upload)
-	publish: {
-		provider: "github",
-		owner: "superset-sh",
-		repo: "superset",
-	},
+	...(publishConfig
+		? {
+				// Generate latest-mac.yml for auto-update only when a fork-specific feed is configured.
+				publish: publishConfig,
+			}
+		: {}),
 
 	// Directories
 	directories: {
@@ -113,22 +123,22 @@ const config: Configuration = {
 			CFBundleDisplayName: productName,
 			// Required for macOS microphone permission prompt
 			NSMicrophoneUsageDescription:
-				"Superset needs microphone access so voice-enabled tools like Codex transcription can capture audio input.",
+				`${productName} needs microphone access so voice-enabled tools like Codex transcription can capture audio input.`,
 			// Required for macOS local network permission prompt
 			NSLocalNetworkUsageDescription:
-				"Superset needs access to your local network to discover and connect to development servers running on your network.",
+				`${productName} needs access to your local network to discover and connect to development servers running on your network.`,
 			// Bonjour service types to browse for (triggers the permission prompt)
 			NSBonjourServices: ["_http._tcp", "_https._tcp"],
 			// Required for Apple Events / Automation permission prompt
 			NSAppleEventsUsageDescription:
-				"Superset needs to interact with other applications to run terminal commands and development tools.",
+				`${productName} needs to interact with other applications to run terminal commands and development tools.`,
 		},
 	},
 
 	// Deep linking protocol
 	protocols: {
 		name: productName,
-		schemes: ["superset"],
+		schemes: [DESKTOP_DISTRIBUTION.protocolScheme],
 	},
 
 	// Linux
@@ -137,7 +147,7 @@ const config: Configuration = {
 		category: "Utility",
 		synopsis: pkg.description,
 		target: ["AppImage"],
-		artifactName: `superset-\${version}-\${arch}.\${ext}`,
+		artifactName: `${DESKTOP_DISTRIBUTION.productName.toLowerCase().replace(/\s+/g, "-")}-\${version}-\${arch}.\${ext}`,
 	},
 
 	// Windows

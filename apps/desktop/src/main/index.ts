@@ -21,6 +21,10 @@ import {
 	PLATFORM,
 	PROTOCOL_SCHEME,
 } from "shared/constants";
+import {
+	DESKTOP_DISTRIBUTION,
+	getWorkspaceScopedAppName,
+} from "shared/desktop-distribution";
 import { setupAgentHooks } from "./lib/agent-setup";
 import { initAppState } from "./lib/app-state";
 import { requestAppleEventsAccess } from "./lib/apple-events-permission";
@@ -49,7 +53,7 @@ void applyShellEnvToProcess().catch((error) => {
 if (IS_DEV) {
 	const workspaceName = resolveDevWorkspaceName();
 	if (workspaceName) {
-		app.setName(`Superset (${workspaceName})`);
+		app.setName(getWorkspaceScopedAppName(workspaceName));
 	}
 }
 
@@ -183,7 +187,7 @@ app.on("before-quit", async (event) => {
 				buttons: ["Quit", "Cancel"],
 				defaultId: 0,
 				cancelId: 1,
-				title: "Quit Superset",
+				title: `Quit ${DESKTOP_DISTRIBUTION.productName}`,
 				message: "Are you sure you want to quit?",
 			});
 

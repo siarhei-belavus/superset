@@ -11,7 +11,7 @@ From the monorepo root:
 The script will:
 1. Show current version and prompt for new version (patch/minor/major/custom)
 2. Update `package.json` version
-3. Create and push a `desktop-v<version>` tag
+3. Create and push a `desktop-v<version>` tag for the default unsigned release workflow
 4. Monitor the GitHub Actions build
 5. Create a **draft release** for review
 
@@ -40,6 +40,28 @@ gh release edit desktop-v0.0.50 --draft=false
 - GitHub CLI (`gh`) installed and authenticated
 - Clean git working directory
 
+## Modified Fork Releases
+
+If you are shipping a modified fork instead of the upstream Superset desktop release:
+
+- keep `LICENSE.md` and `apps/desktop/MODIFIED_BUILD_NOTICE.md` in the packaged bundle
+- clearly label the app/download as a modified build and not an official Superset release
+- review `productName`, icons, release names, and update feeds before publishing
+- avoid shipping a fork that looks indistinguishable from the official build
+
+For macOS bundles, the default build already copies legal notices to:
+
+- `Contents/Resources/legal/LICENSE.md`
+- `Contents/Resources/legal/MODIFIED_BUILD_NOTICE.md`
+
+Before distributing a forked build, update `apps/desktop/MODIFIED_BUILD_NOTICE.md` with your organization name and a short summary of your modifications.
+
+## Release Channels
+
+- `desktop-v<version>` triggers the default unsigned `Localset` release workflow and is the current recommended path for this fork
+- `desktop-signed-v<version>` triggers the signed macOS workflow for future use once Apple signing secrets are configured
+- `desktop-canary` remains the unsigned canary channel
+
 ## Manual Release
 
 If you prefer not to use the script:
@@ -50,6 +72,13 @@ git push origin desktop-v1.0.0
 ```
 
 This creates a draft release. Publish it manually at GitHub Releases.
+
+For a future signed release:
+
+```bash
+git tag desktop-signed-v1.0.0
+git push origin desktop-signed-v1.0.0
+```
 
 ## Auto-update
 
@@ -62,12 +91,19 @@ The app checks for updates at launch and every x hours using:
 
 The workflow creates stable-named copies (without version) so these URLs always point to the latest build.
 
+If you are publishing a fork, review the auto-update settings before release. The default configuration points to the upstream `superset-sh/superset` GitHub releases. A forked build should either:
+
+- publish to its own release feed, or
+- disable auto-update until a fork-specific feed is configured
+
 ## Code Signing
 
 macOS code signing uses these repository secrets:
 
 - `MAC_CERTIFICATE` / `MAC_CERTIFICATE_PASSWORD`
 - `APPLE_ID` / `APPLE_ID_PASSWORD` / `APPLE_TEAM_ID`
+
+These secrets are only required for the signed release workflow. The default unsigned workflow uses `electron-builder.local.ts` and does not require Apple signing credentials.
 
 ## Local Testing
 
@@ -90,3 +126,4 @@ Linux output should include:
 - **Linux auto-update not working**: Verify `release/*-linux.yml` is uploaded to the GitHub release
 - **Build icon warnings/failures**: Add icons under `src/resources/build/icons/` (`icon.icns`, `icon.ico`, optional Linux `.png`)
 - **Native module errors**: Ensure `node-pty` is in externals in both `electron.vite.config.ts` and `electron-builder.ts`
+- **Unsigned macOS build warning**: On first launch, use `Right-click > Open` or macOS `Open Anyway`

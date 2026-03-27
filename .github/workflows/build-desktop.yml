@@ -27,6 +27,16 @@ on:
         required: false
         type: number
         default: 30
+      local_only:
+        description: "Build a local-only desktop app with auth/backend/electric/update feeds disabled"
+        required: false
+        type: boolean
+        default: false
+      updater_enabled:
+        description: "Enable GitHub-based auto-update metadata and runtime feed configuration"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build-macos:
@@ -90,6 +100,52 @@ jobs:
         working-directory: apps/desktop
         run: bun run generate:icons
 
+      - name: Resolve desktop distribution env
+        run: |
+          if [[ "${{ inputs.local_only }}" == "true" ]]; then
+            {
+              echo "DESKTOP_LOCAL_ONLY=1"
+              echo "NEXT_PUBLIC_API_URL=http://127.0.0.1:9"
+              echo "NEXT_PUBLIC_ELECTRIC_URL=http://127.0.0.1:9"
+              echo "NEXT_PUBLIC_STREAMS_URL=http://127.0.0.1:9"
+              echo "NEXT_PUBLIC_WEB_URL=http://127.0.0.1:9"
+              echo "NEXT_PUBLIC_DOCS_URL=http://127.0.0.1:9"
+            } >> "$GITHUB_ENV"
+          else
+            {
+              echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}"
+              echo "NEXT_PUBLIC_ELECTRIC_URL=${{ secrets.NEXT_PUBLIC_ELECTRIC_URL }}"
+              echo "NEXT_PUBLIC_STREAMS_URL=${{ secrets.NEXT_PUBLIC_STREAMS_URL }}"
+              echo "NEXT_PUBLIC_WEB_URL=${{ secrets.NEXT_PUBLIC_WEB_URL }}"
+              echo "NEXT_PUBLIC_DOCS_URL=${{ secrets.NEXT_PUBLIC_DOCS_URL }}"
+            } >> "$GITHUB_ENV"
+          fi
+
+          if [[ "${{ inputs.updater_enabled }}" == "true" ]]; then
+            {
+              echo "DESKTOP_UPDATER_GITHUB_OWNER=${{ github.repository_owner }}"
+              echo "DESKTOP_UPDATER_GITHUB_REPO=${{ github.event.repository.name }}"
+            } >> "$GITHUB_ENV"
+            if [[ "${{ inputs.channel }}" == "canary" ]]; then
+              {
+                echo "DESKTOP_UPDATER_BASE_URL=https://github.com/${{ github.repository }}/releases/download/desktop-canary"
+                echo "DESKTOP_CANARY_UPDATER_BASE_URL=https://github.com/${{ github.repository }}/releases/download/desktop-canary"
+              } >> "$GITHUB_ENV"
+            else
+              {
+                echo "DESKTOP_UPDATER_BASE_URL=https://github.com/${{ github.repository }}/releases/latest/download"
+                echo "DESKTOP_CANARY_UPDATER_BASE_URL=https://github.com/${{ github.repository }}/releases/download/desktop-canary"
+              } >> "$GITHUB_ENV"
+            fi
+          else
+            {
+              echo "DESKTOP_UPDATER_BASE_URL="
+              echo "DESKTOP_CANARY_UPDATER_BASE_URL="
+              echo "DESKTOP_UPDATER_GITHUB_OWNER="
+              echo "DESKTOP_UPDATER_GITHUB_REPO="
+            } >> "$GITHUB_ENV"
+          fi
+
       - name: Compile app with electron-vite
         working-directory: apps/desktop
         env:
@@ -97,11 +153,6 @@ jobs:
           NEXT_PUBLIC_POSTHOG_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GH_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
-          NEXT_PUBLIC_WEB_URL: ${{ secrets.NEXT_PUBLIC_WEB_URL }}
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-          NEXT_PUBLIC_DOCS_URL: ${{ secrets.NEXT_PUBLIC_DOCS_URL }}
-          NEXT_PUBLIC_STREAMS_URL: ${{ secrets.NEXT_PUBLIC_STREAMS_URL }}
-          NEXT_PUBLIC_ELECTRIC_URL: ${{ secrets.NEXT_PUBLIC_ELECTRIC_URL }}
           SENTRY_DSN_DESKTOP: ${{ secrets.SENTRY_DSN_DESKTOP }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SUPERSET_WORKSPACE_NAME: superset
@@ -119,6 +170,7 @@ jobs:
         run: bun run package -- --publish never --config ${{ inputs.electron_builder_config }} --${{ matrix.arch }}
 
       - name: Verify app-update.yml exists
+        if: ${{ inputs.updater_enabled }}
         working-directory: apps/desktop
         run: |
           # electron-builder uses mac-arm64/ for arm64 and mac/ for x64 (when host is arm64)
@@ -151,6 +203,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload auto-update manifest
+        if: ${{ inputs.updater_enabled }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact_prefix }}-mac-${{ matrix.arch }}-update-manifest
@@ -212,6 +265,52 @@ jobs:
         working-directory: apps/desktop
         run: bun run generate:icons
 
+      - name: Resolve desktop distribution env
+        run: |
+          if [[ "${{ inputs.local_only }}" == "true" ]]; then
+            {
+              echo "DESKTOP_LOCAL_ONLY=1"
+              echo "NEXT_PUBLIC_API_URL=http://127.0.0.1:9"
+              echo "NEXT_PUBLIC_ELECTRIC_URL=http://127.0.0.1:9"
+              echo "NEXT_PUBLIC_STREAMS_URL=http://127.0.0.1:9"
+              echo "NEXT_PUBLIC_WEB_URL=http://127.0.0.1:9"
+              echo "NEXT_PUBLIC_DOCS_URL=http://127.0.0.1:9"
+            } >> "$GITHUB_ENV"
+          else
+            {
+              echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}"
+              echo "NEXT_PUBLIC_ELECTRIC_URL=${{ secrets.NEXT_PUBLIC_ELECTRIC_URL }}"
+              echo "NEXT_PUBLIC_STREAMS_URL=${{ secrets.NEXT_PUBLIC_STREAMS_URL }}"
+              echo "NEXT_PUBLIC_WEB_URL=${{ secrets.NEXT_PUBLIC_WEB_URL }}"
+              echo "NEXT_PUBLIC_DOCS_URL=${{ secrets.NEXT_PUBLIC_DOCS_URL }}"
+            } >> "$GITHUB_ENV"
+          fi
+
+          if [[ "${{ inputs.updater_enabled }}" == "true" ]]; then
+            {
+              echo "DESKTOP_UPDATER_GITHUB_OWNER=${{ github.repository_owner }}"
+              echo "DESKTOP_UPDATER_GITHUB_REPO=${{ github.event.repository.name }}"
+            } >> "$GITHUB_ENV"
+            if [[ "${{ inputs.channel }}" == "canary" ]]; then
+              {
+                echo "DESKTOP_UPDATER_BASE_URL=https://github.com/${{ github.repository }}/releases/download/desktop-canary"
+                echo "DESKTOP_CANARY_UPDATER_BASE_URL=https://github.com/${{ github.repository }}/releases/download/desktop-canary"
+              } >> "$GITHUB_ENV"
+            else
+              {
+                echo "DESKTOP_UPDATER_BASE_URL=https://github.com/${{ github.repository }}/releases/latest/download"
+                echo "DESKTOP_CANARY_UPDATER_BASE_URL=https://github.com/${{ github.repository }}/releases/download/desktop-canary"
+              } >> "$GITHUB_ENV"
+            fi
+          else
+            {
+              echo "DESKTOP_UPDATER_BASE_URL="
+              echo "DESKTOP_CANARY_UPDATER_BASE_URL="
+              echo "DESKTOP_UPDATER_GITHUB_OWNER="
+              echo "DESKTOP_UPDATER_GITHUB_REPO="
+            } >> "$GITHUB_ENV"
+          fi
+
       - name: Compile app with electron-vite
         working-directory: apps/desktop
         env:
@@ -219,11 +318,6 @@ jobs:
           NEXT_PUBLIC_POSTHOG_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GH_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
-          NEXT_PUBLIC_WEB_URL: ${{ secrets.NEXT_PUBLIC_WEB_URL }}
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-          NEXT_PUBLIC_DOCS_URL: ${{ secrets.NEXT_PUBLIC_DOCS_URL }}
-          NEXT_PUBLIC_STREAMS_URL: ${{ secrets.NEXT_PUBLIC_STREAMS_URL }}
-          NEXT_PUBLIC_ELECTRIC_URL: ${{ secrets.NEXT_PUBLIC_ELECTRIC_URL }}
           SENTRY_DSN_DESKTOP: ${{ secrets.SENTRY_DSN_DESKTOP }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SUPERSET_WORKSPACE_NAME: superset
@@ -241,10 +335,12 @@ jobs:
             echo "::error::No AppImage artifact generated in apps/desktop/release"
             exit 1
           }
-          test -n "$(ls -1 release/*-linux.yml 2>/dev/null)" || {
-            echo "::error::No Linux auto-update manifest generated in apps/desktop/release"
-            exit 1
-          }
+          if [[ "${{ inputs.updater_enabled }}" == "true" ]]; then
+            test -n "$(ls -1 release/*-linux.yml 2>/dev/null)" || {
+              echo "::error::No Linux auto-update manifest generated in apps/desktop/release"
+              exit 1
+            }
+          fi
 
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
@@ -255,6 +351,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload Linux auto-update manifest
+        if: ${{ inputs.updater_enabled }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact_prefix }}-linux-update-manifest

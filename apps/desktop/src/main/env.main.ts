@@ -21,6 +21,9 @@ export const env = createEnv({
 			.default("https://electric-proxy.avi-6ac.workers.dev"),
 		NEXT_PUBLIC_WEB_URL: z.url().default("https://app.superset.sh"),
 		STREAMS_URL: z.url().default("https://superset-stream.fly.dev"),
+		DESKTOP_UPDATER_BASE_URL: z.url().optional(),
+		DESKTOP_CANARY_UPDATER_BASE_URL: z.url().optional(),
+		DESKTOP_LOCAL_ONLY: z.string().optional(),
 	},
 
 	runtimeEnv: {
@@ -33,6 +36,9 @@ export const env = createEnv({
 		NEXT_PUBLIC_ELECTRIC_URL: process.env.NEXT_PUBLIC_ELECTRIC_URL,
 		NEXT_PUBLIC_WEB_URL: process.env.NEXT_PUBLIC_WEB_URL,
 		STREAMS_URL: process.env.STREAMS_URL,
+		DESKTOP_UPDATER_BASE_URL: process.env.DESKTOP_UPDATER_BASE_URL,
+		DESKTOP_CANARY_UPDATER_BASE_URL: process.env.DESKTOP_CANARY_UPDATER_BASE_URL,
+		DESKTOP_LOCAL_ONLY: process.env.DESKTOP_LOCAL_ONLY,
 	},
 	emptyStringAsUndefined: true,
 	// Only allow skipping validation in development (never in production)
@@ -42,3 +48,7 @@ export const env = createEnv({
 	// Main process runs in trusted Node.js environment
 	isServer: true,
 });
+
+export const IS_LOCAL_ONLY_BUILD =
+	process.env.DESKTOP_LOCAL_ONLY === "1" ||
+	process.env.DESKTOP_LOCAL_ONLY === "true";

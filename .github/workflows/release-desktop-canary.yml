@@ -77,6 +77,8 @@ jobs:
       electron_builder_config: electron-builder.canary.ts
       artifact_prefix: desktop-canary
       artifact_retention_days: 7
+      local_only: true
+      updater_enabled: true
     secrets: inherit
 
   release:
@@ -96,20 +98,14 @@ jobs:
           pattern: desktop-canary-*
           merge-multiple: true
 
-      - name: Merge macOS auto-update manifests
-        uses: ./.github/actions/merge-mac-manifests
-        with:
-          artifact-prefix: desktop-canary
-          extra-manifest-names: canary-mac.yml
-
       - name: Create canary-named copies for updater URLs
         run: |
           cd release-artifacts
           for file in *.AppImage; do
             if [[ -f "$file" ]]; then
               arch=$(echo "$file" | sed -E 's/.*-([^-]+)\.AppImage$/\1/')
-              cp "$file" "Superset-Canary-${arch}.AppImage"
-              echo "Created canary copy: Superset-Canary-${arch}.AppImage"
+              cp "$file" "Localset-Canary-${arch}.AppImage"
+              echo "Created canary copy: Localset-Canary-${arch}.AppImage"
             fi
           done
           # Prerelease builds may request canary-linux.yml; keep latest-linux.yml as fallback.
@@ -140,7 +136,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: desktop-canary
-          name: "Superset Desktop Canary"
+          name: "Localset Canary"
           body: |
             **Internal Testing Build**
 

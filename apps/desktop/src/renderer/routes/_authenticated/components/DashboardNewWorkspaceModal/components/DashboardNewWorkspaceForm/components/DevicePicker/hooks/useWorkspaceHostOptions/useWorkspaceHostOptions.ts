@@ -39,7 +39,7 @@ export function useWorkspaceHostOptions(): UseWorkspaceHostOptionsResult {
 	const { services } = useHostService();
 	const { data: deviceInfo } = electronTrpc.auth.getDeviceInfo.useQuery();
 
-	const activeOrganizationId = env.SKIP_ENV_VALIDATION
+	const activeOrganizationId = env.AUTH_BYPASS
 		? MOCK_ORG_ID
 		: (session?.session?.activeOrganizationId ?? null);
 	const currentUserId = session?.user?.id ?? null;
