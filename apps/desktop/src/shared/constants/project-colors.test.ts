@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
+	isProjectColorValue,
+	normalizeProjectColorValue,
 	PROJECT_COLOR_DEFAULT,
 	PROJECT_COLORS,
 	PROJECT_CUSTOM_COLORS,
@@ -55,5 +57,24 @@ describe("PROJECT_COLORS", () => {
 				).toBeGreaterThan(40);
 			}
 		}
+	});
+
+	it("accepts valid custom hex colors", () => {
+		expect(isProjectColorValue(PROJECT_COLOR_DEFAULT)).toBe(true);
+		expect(isProjectColorValue("#123abc")).toBe(true);
+		expect(isProjectColorValue("#ABCDEF")).toBe(true);
+	});
+
+	it("rejects invalid custom colors", () => {
+		expect(isProjectColorValue("blue")).toBe(false);
+		expect(isProjectColorValue("#123")).toBe(false);
+		expect(isProjectColorValue("#12345g")).toBe(false);
+	});
+
+	it("normalizes custom hex colors", () => {
+		expect(normalizeProjectColorValue("#ABCDEF")).toBe("#abcdef");
+		expect(normalizeProjectColorValue(PROJECT_COLOR_DEFAULT)).toBe(
+			PROJECT_COLOR_DEFAULT,
+		);
 	});
 });

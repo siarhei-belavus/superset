@@ -22,7 +22,10 @@ import {
 	saveProjectIconFromDataUrl,
 } from "main/lib/project-icons";
 import { getWorkspaceRuntimeRegistry } from "main/lib/workspace-runtime";
-import { PROJECT_COLOR_VALUES } from "shared/constants/project-colors";
+import {
+	isProjectColorValue,
+	normalizeProjectColorValue,
+} from "shared/constants/project-colors";
 import { z } from "zod";
 import { publicProcedure, router } from "../..";
 import { resolveDefaultEditor } from "../external";
@@ -1346,10 +1349,12 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 						name: z.string().trim().min(1).optional(),
 						color: z
 							.string()
+							.trim()
 							.refine(
-								(value) => PROJECT_COLOR_VALUES.includes(value),
+								(value) => isProjectColorValue(value),
 								"Invalid project color",
 							)
+							.transform((value) => normalizeProjectColorValue(value))
 							.optional(),
 						branchPrefixMode: z.enum(BRANCH_PREFIX_MODES).nullable().optional(),
 						branchPrefixCustom: z.string().nullable().optional(),

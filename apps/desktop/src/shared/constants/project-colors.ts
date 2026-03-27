@@ -1,6 +1,8 @@
 /** Special value representing "no custom color" - uses default gray border */
 export const PROJECT_COLOR_DEFAULT = "default";
 
+const PROJECT_COLOR_HEX_REGEX = /^#[0-9a-fA-F]{6}$/;
+
 export const PROJECT_COLORS = [
 	{ name: "Default", value: PROJECT_COLOR_DEFAULT },
 	{ name: "Red", value: "#ef4444" },
@@ -24,3 +26,19 @@ export const PROJECT_CUSTOM_COLORS = PROJECT_COLORS.filter(
 export const PROJECT_COLOR_VALUES: string[] = PROJECT_COLORS.map(
 	(color) => color.value,
 );
+
+export function isProjectHexColor(value: string): boolean {
+	return PROJECT_COLOR_HEX_REGEX.test(value);
+}
+
+export function isProjectColorValue(value: string): boolean {
+	return value === PROJECT_COLOR_DEFAULT || isProjectHexColor(value);
+}
+
+export function isProjectPresetColor(value: string): boolean {
+	return PROJECT_COLOR_VALUES.includes(value);
+}
+
+export function normalizeProjectColorValue(value: string): string {
+	return isProjectHexColor(value) ? value.toLowerCase() : value;
+}

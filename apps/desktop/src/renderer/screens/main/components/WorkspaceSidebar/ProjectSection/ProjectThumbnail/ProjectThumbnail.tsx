@@ -1,7 +1,10 @@
 import { cn } from "@superset/ui/utils";
 import { useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { PROJECT_COLOR_DEFAULT } from "shared/constants/project-colors";
+import {
+	isProjectHexColor,
+	PROJECT_COLOR_DEFAULT,
+} from "shared/constants/project-colors";
 
 interface ProjectThumbnailProps {
 	projectId: string;
@@ -31,7 +34,7 @@ function hexToRgba(hex: string, alpha: number): string {
  * Checks if a color value is a custom hex color (not the "default" value).
  */
 function isCustomColor(color: string): boolean {
-	return color !== PROJECT_COLOR_DEFAULT && color.startsWith("#");
+	return color !== PROJECT_COLOR_DEFAULT && isProjectHexColor(color);
 }
 
 /**
